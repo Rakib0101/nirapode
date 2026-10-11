@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { refreshSessionToken, COOKIE_NAME } from "@/lib/session-edge";
+import { refreshSessionToken, verifySessionToken, COOKIE_NAME, PIN_COOKIE_NAME } from "@/lib/session-edge";
 import { REFERRAL_COOKIE_NAME, REFERRAL_COOKIE_MAX_AGE } from "@/lib/referral-constants";
+
+// Pages the PIN app-lock must never block, even for a logged-in user with a
+// PIN set — the gate page itself, its recovery flow, and the pages used
+// before a session exists at all (included defensively; those render
+// without a session anyway, so the gate wouldn't fire for them regardless).
+const PIN_GATE_EXEMPT = new Set([
+  "/verify-pin",
+  "/forgot-pin",
+  "/login",
+  "/register",
+  "/verify-otp",
+  "/forgot-password",
+  "/reset-password",
+]);
 
 export default async function middleware(request: NextRequest) {
   const response = NextResponse.next();
@@ -34,6 +48,23 @@ export default async function middleware(request: NextRequest) {
         maxAge: refreshed.maxAge,
         path: "/",
       });
+    }
+
+    // PIN app-lock: a logged-in user whose account has a PIN set must
+    // re-enter it once per fresh browser session before seeing any page.
+    // The "verified" cookie is itself a true session cookie (no maxAge), so
+    // closing the browser naturally clears it and the gate re-fires next visit.
+    if (!PIN_GATE_EXEMPT.has(request.nextUrl.pathname)) {
+      const claims = await verifySessionToken(token);
+      if (claims?.hasPin) {
+        const pinOk = request.cookies.get(PIN_COOKIE_NAME)?.value === claims.userId;
+        if (!pinOk) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/verify-pin";
+          url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
+          return NextResponse.redirect(url);
+        }
+      }
     }
   }
 

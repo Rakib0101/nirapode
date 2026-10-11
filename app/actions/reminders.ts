@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deliverReminder, sendDueReminders } from "@/lib/reminders";
+import { zonedToUtc, DEFAULT_REMINDER_TIMEZONE, REMINDER_COUNTRIES } from "@/lib/timezones";
 
 export async function getReminderSlotPrice(): Promise<number> {
   try {
@@ -117,6 +118,8 @@ export async function saveReminderAction(formData: FormData) {
   const dateStr = formData.get("remindAt") as string;
   const timeStr = (formData.get("remindTime") as string) || "09:00";
   const channel = (formData.get("channel") as string) || "WHATSAPP";
+  const timezoneRaw = formData.get("timezone") as string | null;
+  const timezone = REMINDER_COUNTRIES.some((c) => c.timezone === timezoneRaw) ? timezoneRaw! : DEFAULT_REMINDER_TIMEZONE;
 
   if (!slotIndex || slotIndex < 1 || slotIndex > 10) {
     return { error: "Invalid slot." };
@@ -132,16 +135,14 @@ export async function saveReminderAction(formData: FormData) {
     }
   }
 
-  // The date/time inputs are in the user's local time, but the server runs in
-  // UTC — convert using the browser's timezone offset (minutes, UTC − local),
-  // falling back to Singapore time (UTC+8) if the browser didn't send one.
+  // The date/time inputs are wall-clock in the user's chosen country/timezone
+  // (explicit selection, not the browser's own clock) — convert to the real
+  // UTC instant using that zone's fixed offset.
   let remindAt: Date | null = null;
   if (dateStr) {
     const [y, mo, d] = dateStr.split("-").map(Number);
     const [h, mi] = timeStr.split(":").map(Number);
-    const tzRaw = formData.get("tzOffset");
-    const tzOffset = tzRaw !== null && tzRaw !== "" && Number.isFinite(Number(tzRaw)) ? Number(tzRaw) : -480;
-    remindAt = new Date(Date.UTC(y, mo - 1, d, h || 0, mi || 0) + tzOffset * 60_000);
+    remindAt = zonedToUtc(y, mo, d, h || 0, mi || 0, timezone);
     if (isNaN(remindAt.getTime())) return { error: "Invalid date or time." };
   }
 
@@ -155,12 +156,14 @@ export async function saveReminderAction(formData: FormData) {
       isUnlocked: true,
       note: note || null,
       remindAt,
+      timezone,
       channel,
       isActive: Boolean(note && remindAt),
     },
     update: {
       note: note || null,
       remindAt,
+      timezone,
       channel,
       isActive: Boolean(note && remindAt),
     },

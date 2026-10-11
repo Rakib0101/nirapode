@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+# AppleDouble resource-fork sidecar files — this project lives on an ExFAT
+# volume, which makes macOS spawn one of these next to every touched file.
+._*
 
 # debug
 npm-debug.log*

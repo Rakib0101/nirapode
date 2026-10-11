@@ -1,14 +1,18 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { saveShareAdminCutAction } from "@/app/actions/admin-settings";
+import { saveShareAdminCutAction, saveShare4AdminCutAction } from "@/app/actions/admin-settings";
 
 type Props = {
   percent: number;
+  variant?: "share6" | "share4";
 };
 
-export function ShareAdminCutForm({ percent }: Props) {
-  const [state, action, pending] = useActionState(saveShareAdminCutAction, null);
+export function ShareAdminCutForm({ percent, variant = "share6" }: Props) {
+  const [state, action, pending] = useActionState(
+    variant === "share4" ? saveShare4AdminCutAction : saveShareAdminCutAction,
+    null
+  );
   const [value, setValue] = useState(String(percent));
 
   return (

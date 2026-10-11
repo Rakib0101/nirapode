@@ -11,6 +11,12 @@ const SECRET = new TextEncoder().encode(
 
 export const COOKIE_NAME = "sp_session";
 
+// True browser-session cookie (no maxAge) marking that the PIN app-lock has
+// been cleared for this browser session. Its value is the userId it was
+// verified for, so switching accounts (or a stale cookie from someone else)
+// never silently counts as verified. See lib/session.ts / middleware.ts.
+export const PIN_COOKIE_NAME = "sp_pin_ok";
+
 // How long a session may sit idle before it's dead, regardless of "remember me".
 // Refreshed on every request (see middleware.ts) as long as the user is active —
 // this is what actually enforces "logged out after a few minutes of inactivity".
@@ -21,6 +27,10 @@ export type SessionPayload = {
   role: string;
   email: string;
   fullName: string;
+  // Whether this account has a 4-digit app-lock PIN set (User.pinHash).
+  // Drives the /verify-pin gate in middleware.ts — absent/false on older
+  // tokens issued before this field existed, which is treated as "no PIN".
+  hasPin?: boolean;
 };
 
 export type TokenClaims = SessionPayload & { absExp: number };

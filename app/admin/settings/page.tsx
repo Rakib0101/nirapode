@@ -1,7 +1,7 @@
 import { getCurrencySettings, getLiveBdtRate } from "@/lib/currency";
-import { getAllCommissionSettings, getShareAdminCutPercent } from "@/lib/commission";
-import { getShareSgdRate } from "@/lib/share-pricing";
-import { getAdminNotificationEmail } from "@/lib/notifications";
+import { getAllCommissionSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
+import { getShareSgdRate, getShare4Amounts } from "@/lib/share-pricing";
+import { getAdminNotificationEmail, getAdminNotificationPhone } from "@/lib/notifications";
 import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings } from "@/app/actions/admin-settings";
 import { getSiteContactSettings } from "@/lib/site-contact";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +10,7 @@ import { BankRatesForm } from "./bank-rates-form";
 import { CommissionSettingsForm } from "./commission-form";
 import { SharePricingForm } from "./share-pricing-form";
 import { ShareAdminCutForm } from "./share-admin-cut-form";
+import { Share4AmountsForm } from "./share4-amounts-form";
 import { NotificationEmailForm } from "./notification-email-form";
 import { PaymentAccountsForm } from "./payment-accounts-form";
 import { AdSenseSettingsForm } from "./adsense-form";
@@ -41,7 +42,7 @@ async function getPaymentAccounts() {
 }
 
 export default async function AdminSettingsPage() {
-  const [settings, liveRate, banks, paymentAccounts, commissionSettings, shareRate, shareAdminCutPercent, notificationEmail, adSenseSettings, reminderSlotPrice, smtpSettings, whatsAppSettings, contactSettings, transferFee, reminderCronKey, requestHeaders] = await Promise.all([
+  const [settings, liveRate, banks, paymentAccounts, commissionSettings, shareRate, shareAdminCutPercent, share4AdminCutPercent, share4Amounts, notificationEmail, notificationPhone, adSenseSettings, reminderSlotPrice, smtpSettings, whatsAppSettings, contactSettings, transferFee, reminderCronKey, requestHeaders] = await Promise.all([
     getCurrencySettings(),
     getLiveBdtRate(),
     getBankRates(),
@@ -49,7 +50,10 @@ export default async function AdminSettingsPage() {
     getAllCommissionSettings(),
     getShareSgdRate(),
     getShareAdminCutPercent(),
+    getShare4AdminCutPercent(),
+    getShare4Amounts(),
     getAdminNotificationEmail(),
+    getAdminNotificationPhone(),
     getAdSenseSettings(),
     getReminderPriceSetting(),
     getSmtpSettings(),
@@ -221,7 +225,51 @@ export default async function AdminSettingsPage() {
           </div>
         </div>
         <div className="p-6">
-          <ShareAdminCutForm percent={shareAdminCutPercent} />
+          <ShareAdminCutForm percent={shareAdminCutPercent} variant="share6" />
+        </div>
+      </div>
+
+      {/* Share 4 (buy-request) platform cut */}
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">Share 4 — Platform Cut</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Same idea as above, tracked separately for Share 4 (buy-request) purchases — informational only
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <ShareAdminCutForm percent={share4AdminCutPercent} variant="share4" />
+        </div>
+      </div>
+
+      {/* Share 4 offer amounts */}
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">Share 4 — Offer Amounts</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                The exact BDT amounts buyers can choose from on the Share 4 (buy-request) form
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <Share4AmountsForm amounts={share4Amounts} />
         </div>
       </div>
 
@@ -235,15 +283,15 @@ export default async function AdminSettingsPage() {
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">Notification Email</h2>
+              <h2 className="font-semibold text-foreground">Admin Notifications</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Where new-request alerts across every module are sent
+                Where new-request alerts across every module are sent — email and/or WhatsApp
               </p>
             </div>
           </div>
         </div>
         <div className="p-6">
-          <NotificationEmailForm email={notificationEmail} />
+          <NotificationEmailForm email={notificationEmail} phone={notificationPhone} />
         </div>
       </div>
 

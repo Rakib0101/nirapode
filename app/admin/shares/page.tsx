@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getShareSgdRate, sgdToBdt } from "@/lib/share-pricing";
+import { getCommissionSetting, getShare4AdminCutPercent, computeCommissionAmount } from "@/lib/commission";
 import { CreateProjectForm } from "./create-form";
 import { ResellActions } from "./resell-actions";
 import { ResetDemoSharesButton } from "@/components/reset-demo-shares-button";
@@ -49,6 +50,7 @@ async function getData() {
       orderBy: { createdAt: "desc" },
       include: {
         buyer: { select: { fullName: true, email: true, phone: true } },
+        referredBy: { select: { fullName: true } },
       },
     }),
   ]);
@@ -62,9 +64,11 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function AdminSharesPage() {
-  const [{ projects, pendingListings, pendingTrades, pendingBuyRequests }, rate] = await Promise.all([
+  const [{ projects, pendingListings, pendingTrades, pendingBuyRequests }, rate, share4Commission, share4AdminCutPercent] = await Promise.all([
     getData(),
     getShareSgdRate(),
+    getCommissionSetting("SHARE_BUY_REQUEST"),
+    getShare4AdminCutPercent(),
   ]);
 
   return (
@@ -103,6 +107,22 @@ export default async function AdminSharesPage() {
                       <span>Offered: <strong className="text-foreground">৳{Number(r.price).toFixed(2)}</strong> <span className="text-muted-foreground font-normal">(~${(Number(r.price) / Number(r.sgdRate ?? rate)).toFixed(2)} SGD)</span></span>
                       <span>Preferred Date: <strong className="text-foreground">{r.preferredDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</strong></span>
                     </div>
+                    <p className="text-xs mt-1.5">
+                      {r.referredBy ? (
+                        <span className="text-foreground">
+                          Agent <span className="text-muted-foreground">({r.referredBy.fullName})</span>: <strong>৳{computeCommissionAmount(share4Commission, Number(r.price)).toFixed(2)}</strong>
+                          <span className="text-muted-foreground"> ({share4Commission.mode === "PERCENTAGE" ? `${share4Commission.value}%` : `flat ৳${share4Commission.value}`})</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">No referring agent</span>
+                      )}
+                      {share4AdminCutPercent > 0 && (
+                        <span className="text-foreground">
+                          {" · "}Platform: <strong>৳{(Number(r.price) * (share4AdminCutPercent / 100)).toFixed(2)}</strong>
+                          <span className="text-muted-foreground"> ({share4AdminCutPercent}%)</span>
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <ResellActions buyRequestId={r.id} type="buyRequest" />
                 </div>

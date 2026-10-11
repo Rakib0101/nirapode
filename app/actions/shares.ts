@@ -5,8 +5,8 @@ import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getReferredByAgentId } from "@/lib/commission";
-import { getShareSgdRate, sgdToBdt } from "@/lib/share-pricing";
-import { SHARE4_AMOUNTS, effectiveShareCertPrice } from "@/lib/share-pricing-utils";
+import { getShareSgdRate, sgdToBdt, getShare4Amounts } from "@/lib/share-pricing";
+import { effectiveShareCertPrice } from "@/lib/share-pricing-utils";
 import { notifyAdmin } from "@/lib/notifications";
 import { getLockedShareNumbers, getListingRemainingCount } from "@/lib/share-listings";
 
@@ -283,7 +283,7 @@ const buyRequestSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   shareNumber: z.string().min(1, "Share number is required"),
   size: z.enum(["SMALL", "BIG"]),
-  price: z.coerce.number().refine((n) => SHARE4_AMOUNTS.includes(n), "Choose an amount from ৳100 to ৳5,000"),
+  price: z.coerce.number().positive("Enter a valid amount"),
   preferredDate: z.coerce.date({ message: "Enter a valid date" }),
 });
 
@@ -306,6 +306,13 @@ export async function createShareBuyRequestAction(
   if (!parse.success) return { error: parse.error.issues[0].message };
 
   const { name, shareNumber, size, price: offeredBdt, preferredDate } = parse.data;
+
+  // Validated against the admin-configured list, not a hardcoded one — admin
+  // has full freedom to set whatever tiers they want (lib/share-pricing.ts).
+  const allowedAmounts = await getShare4Amounts();
+  if (!allowedAmounts.includes(offeredBdt)) {
+    return { error: `Choose one of the available amounts: ${allowedAmounts.map((a) => `৳${a.toLocaleString()}`).join(", ")}.` };
+  }
 
   const wallet = await prisma.wallet.findUnique({
     where: { userId: session.userId },
@@ -331,6 +338,8 @@ export async function createShareBuyRequestAction(
     };
   }
 
+  const referredById = await getReferredByAgentId(session.userId);
+
   await prisma.shareBuyRequest.create({
     data: {
       buyerId: session.userId,
@@ -340,6 +349,7 @@ export async function createShareBuyRequestAction(
       price: offeredBdt,
       sgdRate: await getShareSgdRate(),
       preferredDate,
+      referredById,
       status: "PENDING",
     },
   });

@@ -13,6 +13,8 @@ const MODULE_DEFAULTS: Record<CommissionModule, CommissionSetting> = {
   AIR_TICKET: { mode: "PERCENTAGE", value: 5 },
   SERVICE: { mode: "PERCENTAGE", value: 5 },
   SHARE: { mode: "PERCENTAGE", value: 5 },
+  // Free by default — admin opts in to a split by setting a nonzero rate here.
+  SHARE_BUY_REQUEST: { mode: "PERCENTAGE", value: 0 },
 };
 
 function settingKeys(module: CommissionModule) {
@@ -70,6 +72,30 @@ export async function saveShareAdminCutPercent(value: number): Promise<void> {
   await prisma.siteSetting.upsert({
     where: { key: SHARE_ADMIN_CUT_KEY },
     create: { key: SHARE_ADMIN_CUT_KEY, value: String(value) },
+    update: { value: String(value) },
+  });
+}
+
+// Same idea as SHARE_ADMIN_CUT_KEY above, but for Share 4 (buy-request) —
+// tracked separately since admin may want a different platform cut (or none)
+// for this simpler, non-marketplace flow. Also purely informational.
+const SHARE4_ADMIN_CUT_KEY = "share4_admin_cut_percent";
+const SHARE4_ADMIN_CUT_DEFAULT = 0;
+
+export async function getShare4AdminCutPercent(): Promise<number> {
+  try {
+    const row = await prisma.siteSetting.findUnique({ where: { key: SHARE4_ADMIN_CUT_KEY } });
+    const value = row ? parseFloat(row.value) : NaN;
+    return isNaN(value) ? SHARE4_ADMIN_CUT_DEFAULT : value;
+  } catch {
+    return SHARE4_ADMIN_CUT_DEFAULT;
+  }
+}
+
+export async function saveShare4AdminCutPercent(value: number): Promise<void> {
+  await prisma.siteSetting.upsert({
+    where: { key: SHARE4_ADMIN_CUT_KEY },
+    create: { key: SHARE4_ADMIN_CUT_KEY, value: String(value) },
     update: { value: String(value) },
   });
 }

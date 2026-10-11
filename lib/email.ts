@@ -60,12 +60,15 @@ export function generateOTP(): string {
 export async function sendOTPEmail(
   email: string,
   otp: string,
-  type: "verification" | "reset"
+  type: "verification" | "reset" | "reset-pin"
 ): Promise<void> {
   const isVerification = type === "verification";
+  const isResetPin = type === "reset-pin";
   const subject = isVerification
     ? "Verify your Singapore Probashi account"
-    : "Reset your password";
+    : isResetPin
+      ? "Reset your Singapore Probashi PIN"
+      : "Reset your password";
 
   const html = `
     <!DOCTYPE html>
@@ -89,12 +92,14 @@ export async function sendOTPEmail(
                 <tr>
                   <td style="padding:32px;">
                     <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#18181b;">
-                      ${isVerification ? "Welcome to Singapore Probashi!" : "Password Reset Request"}
+                      ${isVerification ? "Welcome to Singapore Probashi!" : isResetPin ? "PIN Reset Request" : "Password Reset Request"}
                     </p>
                     <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.5;">
                       ${isVerification
                         ? "Please use the verification code below to confirm your email address. This code expires in 10 minutes."
-                        : "We received a request to reset your password. Use the code below to proceed. This code expires in 10 minutes."}
+                        : isResetPin
+                          ? "We received a request to reset your 4-digit app-lock PIN. Use the code below to proceed. This code expires in 10 minutes."
+                          : "We received a request to reset your password. Use the code below to proceed. This code expires in 10 minutes."}
                     </p>
                     <div style="background:#f4f4f5;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
                       <span style="font-family:monospace;font-size:36px;font-weight:700;letter-spacing:8px;color:#047857;">

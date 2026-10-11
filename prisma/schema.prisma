@@ -21,6 +21,7 @@ enum Role {
 enum OtpType {
   EMAIL_VERIFICATION
   FORGOT_PASSWORD
+  RESET_PIN
 }
 
 enum ShareStatus {
@@ -143,6 +144,10 @@ model User {
   email        String   @unique
   phone        String?
   passwordHash String?
+  // Separate from passwordHash — a quick 4-digit app-lock PIN, independent of
+  // the account's real login password. Null means the user hasn't opted into
+  // the app-lock gate (see lib/session.ts / middleware.ts).
+  pinHash      String?
   googleId     String?  @unique
   profilePhoto String?
   role         Role     @default(USER)
@@ -196,6 +201,7 @@ model User {
   createdProjects      Project[]
   buyRequests          ShareBuyRequest[]      @relation("BuyRequestBuyer")
   processedBuyRequests ShareBuyRequest[]      @relation("BuyRequestProcessor")
+  referredBuyRequests  ShareBuyRequest[]      @relation("BuyRequestReferrer")
   reminders            Reminder[]
   forumTopics          ForumTopic[]
   forumReplies         ForumReply[]
@@ -394,11 +400,16 @@ model ShareBuyRequest {
   preferredDate DateTime
   status        PurchaseStatus @default(PENDING)
   adminNote     String?
+  // The buyer's persistent referrer (see commission.ts getReferredByAgentId),
+  // captured at request time. Commission is only credited on approval, and
+  // only if the admin has set a nonzero SHARE_BUY_REQUEST commission rate.
+  referredById  String?
   processedById String?
   processedAt   DateTime?
   createdAt     DateTime       @default(now())
 
   buyer       User  @relation("BuyRequestBuyer", fields: [buyerId], references: [id])
+  referredBy  User? @relation("BuyRequestReferrer", fields: [referredById], references: [id])
   processedBy User? @relation("BuyRequestProcessor", fields: [processedById], references: [id])
 }
 
@@ -899,6 +910,10 @@ model Reminder {
   title      String?
   note       String?
   remindAt   DateTime?
+  // IANA timezone id (e.g. "Asia/Dhaka") the user picked via a country dropdown
+  // — remindAt is converted to/from this zone instead of the browser's local
+  // offset. Null on legacy rows = assume Asia/Singapore, the old hardcoded behavior.
+  timezone   String?
   channel    String    @default("WHATSAPP") // "WHATSAPP", "GMAIL", "BOTH"
   isActive   Boolean   @default(true)
   lastSentAt DateTime?

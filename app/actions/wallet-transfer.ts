@@ -45,12 +45,15 @@ export async function sendMoneyAction(_prev: ActionState, formData: FormData): P
 
   const sender = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { passwordHash: true },
+    select: { passwordHash: true, pinHash: true },
   });
-  if (!sender?.passwordHash) {
+  if (!sender?.passwordHash && !sender?.pinHash) {
     return { error: "Set a password or PIN on your account before sending money." };
   }
-  if (!(await bcrypt.compare(password, sender.passwordHash))) {
+  // PIN and password are separate credentials now — accept either one.
+  const matchesPassword = sender.passwordHash ? await bcrypt.compare(password, sender.passwordHash) : false;
+  const matchesPin = sender.pinHash ? await bcrypt.compare(password, sender.pinHash) : false;
+  if (!matchesPassword && !matchesPin) {
     return { error: "Incorrect password or PIN." };
   }
 

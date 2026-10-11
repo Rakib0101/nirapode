@@ -50,6 +50,15 @@ export default async function CurrencyPage() {
               {" · "}{isManual ? "Admin rate" : "Live"}
             </p>
           </div>
+          {settings.manualPhpRate != null && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-2 h-2 rounded-full bg-blue-400" />
+              <p className="text-xs text-muted-foreground">
+                Reference rate: 1 SGD = <strong className="text-foreground">{settings.manualPhpRate.toFixed(2)} ₱ PHP</strong>
+                {" · "}Admin rate
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

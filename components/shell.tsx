@@ -8,7 +8,7 @@ import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 import type { SessionPayload } from "@/lib/session";
 import type { SiteContactSettings } from "@/lib/site-contact-types";
 
-const AUTH_PATHS = ["/login", "/register", "/verify-otp", "/forgot-password", "/reset-password", "/set-pin", "/admin"];
+const AUTH_PATHS = ["/login", "/register", "/verify-otp", "/forgot-password", "/reset-password", "/set-pin", "/verify-pin", "/forgot-pin", "/admin"];
 
 type ShellProps = {
   children: React.ReactNode;

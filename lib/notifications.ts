@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
+import { sendWhatsAppMessage } from "@/lib/whatsapp-server";
 
 const ADMIN_EMAIL_KEY = "admin_notification_email";
+const ADMIN_PHONE_KEY = "admin_notification_phone";
 
 export async function getAdminNotificationEmail(): Promise<string | null> {
   try {
@@ -17,6 +19,23 @@ export async function saveAdminNotificationEmail(email: string): Promise<void> {
     where: { key: ADMIN_EMAIL_KEY },
     create: { key: ADMIN_EMAIL_KEY, value: email },
     update: { value: email },
+  });
+}
+
+export async function getAdminNotificationPhone(): Promise<string | null> {
+  try {
+    const row = await prisma.siteSetting.findUnique({ where: { key: ADMIN_PHONE_KEY } });
+    return row?.value?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAdminNotificationPhone(phone: string): Promise<void> {
+  await prisma.siteSetting.upsert({
+    where: { key: ADMIN_PHONE_KEY },
+    create: { key: ADMIN_PHONE_KEY, value: phone },
+    update: { value: phone },
   });
 }
 
@@ -53,10 +72,11 @@ function wrapEmail(heading: string, bodyHtml: string): string {
   `;
 }
 
-// Fires an email to the admin-configured notification address whenever a new
-// request/action happens somewhere on the platform. Deliberately silent on
-// failure (no admin email set, SMTP down, etc.) — the request/action itself
-// must always succeed regardless of whether this notification goes out.
+// Fires an email (and, if configured, a WhatsApp message) to the admin
+// whenever a new request/action happens somewhere on the platform.
+// Deliberately silent on failure (no admin email/phone set, SMTP down,
+// WhatsApp gateway not configured, etc.) — the request/action itself must
+// always succeed regardless of whether these notifications go out.
 export async function notifyAdmin(opts: {
   subject: string;
   heading: string;
@@ -64,31 +84,45 @@ export async function notifyAdmin(opts: {
   actionPath?: string;
   actionLabel?: string;
 }): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+
   try {
     const to = await getAdminNotificationEmail();
-    if (!to) return;
+    if (to) {
+      const rows = opts.lines
+        .map(
+          (l) =>
+            `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;">${l.label}</td><td style="padding:4px 0;font-size:13px;color:#111827;font-weight:600;text-align:right;">${l.value}</td></tr>`
+        )
+        .join("");
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-    const rows = opts.lines
-      .map(
-        (l) =>
-          `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;">${l.label}</td><td style="padding:4px 0;font-size:13px;color:#111827;font-weight:600;text-align:right;">${l.value}</td></tr>`
-      )
-      .join("");
+      const body = `
+        <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#111827;">${opts.heading}</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">${rows}</table>
+        ${
+          opts.actionPath
+            ? `<a href="${baseUrl}${opts.actionPath}" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;text-decoration:none;">${opts.actionLabel ?? "View in Admin Panel"}</a>`
+            : ""
+        }
+      `;
 
-    const body = `
-      <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#111827;">${opts.heading}</p>
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">${rows}</table>
-      ${
-        opts.actionPath
-          ? `<a href="${baseUrl}${opts.actionPath}" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;text-decoration:none;">${opts.actionLabel ?? "View in Admin Panel"}</a>`
-          : ""
-      }
-    `;
-
-    await sendEmail(to, opts.subject, wrapEmail("New Activity", body));
+      await sendEmail(to, opts.subject, wrapEmail("New Activity", body));
+    }
   } catch (err) {
     console.error("[notifyAdmin] failed to send notification email:", err);
+  }
+
+  try {
+    const phone = await getAdminNotificationPhone();
+    if (phone) {
+      const lines = opts.lines.map((l) => `${l.label}: ${l.value}`).join("\n");
+      const link = opts.actionPath ? `\n${baseUrl}${opts.actionPath}` : "";
+      const text = `🔔 ${opts.heading}\n\n${lines}${link}`;
+      const res = await sendWhatsAppMessage({ to: phone, text });
+      if (!res.success) console.error("[notifyAdmin] WhatsApp send failed:", res.error);
+    }
+  } catch (err) {
+    console.error("[notifyAdmin] failed to send WhatsApp notification:", err);
   }
 }
 

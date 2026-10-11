@@ -98,10 +98,11 @@ export async function GET(req: NextRequest) {
     role: user.role,
     email: user.email,
     fullName: user.fullName,
+    hasPin: Boolean(user.pinHash),
   });
 
   // Prompt Google users who don't have a 4-digit PIN set to create one
-  const targetPath = user.passwordHash ? "/dashboard" : "/set-pin";
+  const targetPath = user.pinHash ? "/dashboard" : "/set-pin";
   const response = NextResponse.redirect(new URL(targetPath, req.url));
   if (refCode) response.cookies.delete(REFERRAL_COOKIE_NAME);
   return response;

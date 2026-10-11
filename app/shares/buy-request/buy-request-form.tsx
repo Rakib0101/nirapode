@@ -2,11 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { createShareBuyRequestAction } from "@/app/actions/shares";
-import { SHARE4_AMOUNTS } from "@/lib/share-pricing-utils";
 
-export function BuyRequestForm({ defaultName, rate }: { defaultName: string; rate: number }) {
+export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: string; rate: number; amounts: number[] }) {
   const [state, action, pending] = useActionState(createShareBuyRequestAction, null);
-  const [price, setPrice] = useState("100");
+  const [price, setPrice] = useState(String(amounts[0] ?? 100));
 
   if (state?.success) {
     return (
@@ -76,7 +75,7 @@ export function BuyRequestForm({ defaultName, rate }: { defaultName: string; rat
             onChange={(e) => setPrice(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl border border-border text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm font-medium cursor-pointer"
           >
-            {SHARE4_AMOUNTS.map((amount) => (
+            {amounts.map((amount) => (
               <option key={amount} value={amount}>
                 ৳{amount.toLocaleString()} BDT (≈ ${(amount / rate).toFixed(2)} SGD)
               </option>

@@ -462,6 +462,15 @@ export async function processResellAction({
             type: "PURCHASE",
           },
         });
+
+        // Referral commission, if this request was referred by an agent and
+        // admin has set a nonzero SHARE_BUY_REQUEST rate (free by default).
+        await creditCommission(tx, {
+          referredById: existingReq.referredById,
+          amount: priceBdt,
+          description: `Share 4 buy request — #${existingReq.shareNumber}`,
+          module: "SHARE_BUY_REQUEST",
+        });
       });
     } else {
       await prisma.shareBuyRequest.update({

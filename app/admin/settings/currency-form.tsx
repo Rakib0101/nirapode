@@ -14,6 +14,7 @@ export function CurrencySettingsForm({ settings, liveRate }: Props) {
   const [source, setSource] = useState<"internet" | "manual">(settings.source);
   const [showBar, setShowBar] = useState(settings.showBar);
   const [manualRate, setManualRate] = useState(String(settings.manualRate));
+  const [manualPhpRate, setManualPhpRate] = useState(settings.manualPhpRate != null ? String(settings.manualPhpRate) : "");
 
   return (
     <form action={action} className="space-y-6">
@@ -114,6 +115,36 @@ export function CurrencySettingsForm({ settings, liveRate }: Props) {
       {source === "internet" && (
         <input type="hidden" name="manualRate" value={manualRate} />
       )}
+
+      {/* Manual Peso rate — independent of the BDT source toggle above, since there's no live PHP feed */}
+      <div>
+        <label className="block text-sm font-semibold text-foreground mb-2">
+          Manual Rate <span className="text-muted-foreground font-normal">(1 SGD = ? Pesos, optional)</span>
+        </label>
+        <div className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
+            1 SGD =
+          </span>
+          <input
+            name="manualPhpRate"
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={manualPhpRate}
+            onChange={(e) => setManualPhpRate(e.target.value)}
+            placeholder="e.g. 31.50"
+            className="w-full pl-20 pr-16 py-2.5 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground font-semibold"
+          />
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
+            ₱ PHP
+          </span>
+        </div>
+        {manualPhpRate && !isNaN(parseFloat(manualPhpRate)) && parseFloat(manualPhpRate) > 0 && (
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Preview: 1 SGD = {parseFloat(manualPhpRate).toFixed(2)} ₱ PHP
+          </p>
+        )}
+      </div>
 
       {/* Show on website toggle */}
       <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border">

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { createSession, getSession } from "@/lib/session";
+import { createSession, getSession, markPinVerifiedAndUpdateSession } from "@/lib/session";
 import { generateOTP, sendOTPEmail } from "@/lib/email";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
@@ -194,6 +194,7 @@ export async function verifyOtpAction(
         role: user.role,
         email: user.email,
         fullName: user.fullName,
+        hasPin: false, // brand-new account, no PIN set yet
       });
 
       targetUrl = "/dashboard";
@@ -286,6 +287,7 @@ export async function loginAction(
         role: true,
         fullName: true,
         passwordHash: true,
+        pinHash: true,
         isActive: true,
       },
     });
@@ -311,9 +313,14 @@ export async function loginAction(
     }
 
     await createSession(
-      { userId: user.id, role: user.role, email: user.email, fullName: user.fullName },
+      { userId: user.id, role: user.role, email: user.email, fullName: user.fullName, hasPin: Boolean(user.pinHash) },
       rememberMe
     );
+
+    // Server Action redirects are soft client-side transitions and don't pass
+    // back through the Proxy PIN gate for this one hop — send PIN-having
+    // users straight to the gate instead of relying on the next navigation.
+    if (user.pinHash) redirect("/verify-pin?next=%2Fdashboard");
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
     console.error("Login action error:", err);
@@ -439,12 +446,13 @@ export async function setPinAction(
     }
 
     const { pin } = parse.data;
-    const passwordHash = await bcrypt.hash(pin, 12);
+    const pinHash = await bcrypt.hash(pin, 12);
 
     await prisma.user.update({
       where: { id: session.userId },
-      data: { passwordHash },
+      data: { pinHash },
     });
+    await markPinVerifiedAndUpdateSession(session.userId);
 
     redirectUrl = "/dashboard?pin_set=1";
   } catch (err: unknown) {

@@ -3,17 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { unlockSlotAction, saveReminderAction, triggerTestReminderAction } from "@/app/actions/reminders";
-
-// Local date/time for the inputs. Only computed in the browser — the server
-// renders in UTC, which would show the wrong day/time.
-function toLocalInputs(value: string | Date): { date: string; time: string } {
-  const d = new Date(value);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return {
-    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-  };
-}
+import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE, utcToZonedInputs } from "@/lib/timezones";
 
 const noopSubscribe = () => () => {};
 
@@ -23,6 +13,7 @@ type ReminderSlot = {
   isUnlocked: boolean;
   note?: string | null;
   remindAt?: string | Date | null;
+  timezone?: string | null;
   channel?: string;
   isActive?: boolean;
   lastSentAt?: string | Date | null;
@@ -69,7 +60,6 @@ export function RemindersView({
   async function handleSave(e: React.FormEvent<HTMLFormElement>, slotIndex: number) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    fd.set("tzOffset", String(new Date().getTimezoneOffset()));
     setLoadingSlot(slotIndex);
     setMsg(null);
     const res = await saveReminderAction(fd);
@@ -142,7 +132,8 @@ export function RemindersView({
         {slots.map((s) => {
           const isSlotFree = s.slotIndex === 1;
           const isUnlocked = isSlotFree || s.isUnlocked;
-          const local = isClient && s.remindAt ? toLocalInputs(s.remindAt) : null;
+          const defaultTimezone = s.timezone || DEFAULT_REMINDER_TIMEZONE;
+          const local = isClient && s.remindAt ? utcToZonedInputs(new Date(s.remindAt), defaultTimezone) : null;
           const defaultDate = local?.date ?? "";
           const defaultTime = local?.time ?? "09:00";
           const wasSent = Boolean(s.lastSentAt && !s.isActive && s.note);
@@ -210,8 +201,8 @@ export function RemindersView({
                       />
                     </div>
 
-                    {/* Date + Time selection + Channel */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Date + Time selection + Country + Channel */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-foreground mb-1">
                           Remind On Date
@@ -236,6 +227,21 @@ export function RemindersView({
                           required
                           className="w-full text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-foreground mb-1">
+                          Country
+                        </label>
+                        <select
+                          name="timezone"
+                          defaultValue={defaultTimezone}
+                          className="w-full text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground bg-white"
+                        >
+                          {REMINDER_COUNTRIES.map((c) => (
+                            <option key={c.timezone} value={c.timezone}>{c.country}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>

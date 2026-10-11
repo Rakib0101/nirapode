@@ -20,6 +20,7 @@ export default async function RemindersPage() {
       isUnlocked: slotIndex === 1 ? true : (existing?.isUnlocked ?? false),
       note: existing?.note,
       remindAt: existing?.remindAt,
+      timezone: existing?.timezone,
       channel: existing?.channel ?? "WHATSAPP",
       isActive: existing?.isActive ?? false,
       lastSentAt: existing?.lastSentAt,

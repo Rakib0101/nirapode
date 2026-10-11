@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp-server";
+import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE } from "@/lib/timezones";
 
 type ReminderWithUser = {
   id: string;
@@ -8,22 +9,26 @@ type ReminderWithUser = {
   slotIndex: number;
   note: string | null;
   remindAt: Date | null;
+  timezone?: string | null;
   channel: string;
   user: { email: string; phone: string | null; fullName: string };
 };
 
-function formatWhen(d: Date): string {
+function formatWhen(d: Date, timezone?: string | null): string {
+  const tz = timezone || DEFAULT_REMINDER_TIMEZONE;
+  const country = REMINDER_COUNTRIES.find((c) => c.timezone === tz);
+  const label = country ? country.country : "SGT";
   return d.toLocaleString("en-GB", {
     day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-    timeZone: "Asia/Singapore",
-  }) + " (SGT)";
+    timeZone: tz,
+  }) + ` (${label})`;
 }
 
 // Delivers one reminder over its chosen channel(s) plus an in-app
 // notification. Never throws — a failed email/WhatsApp must not block the rest.
 export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waSent: boolean }> {
   const note = reminder.note ?? "";
-  const when = reminder.remindAt ? formatWhen(reminder.remindAt) : null;
+  const when = reminder.remindAt ? formatWhen(reminder.remindAt, reminder.timezone) : null;
 
   if ((reminder.channel === "GMAIL" || reminder.channel === "BOTH") && reminder.user.email) {
     try {

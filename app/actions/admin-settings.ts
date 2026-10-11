@@ -3,9 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { COMMISSION_MODULES, saveCommissionSetting, saveShareAdminCutPercent, type CommissionMode } from "@/lib/commission";
-import { saveShareSgdRate } from "@/lib/share-pricing";
-import { saveAdminNotificationEmail } from "@/lib/notifications";
+import { COMMISSION_MODULES, saveCommissionSetting, saveShareAdminCutPercent, saveShare4AdminCutPercent, type CommissionMode } from "@/lib/commission";
+import { saveShareSgdRate, saveShare4Amounts } from "@/lib/share-pricing";
+import { saveAdminNotificationEmail, saveAdminNotificationPhone } from "@/lib/notifications";
 import { saveTransferFeeSetting } from "@/lib/wallet";
 
 type State = { error?: string; success?: boolean } | null;
@@ -18,6 +18,7 @@ export async function saveCurrencySettingsAction(_prev: State, formData: FormDat
 
   const source = formData.get("source") as string;
   const rawRate = formData.get("manualRate") as string;
+  const rawPhpRate = (formData.get("manualPhpRate") as string)?.trim();
   const showBar = formData.get("showBar") === "on";
 
   if (!["internet", "manual"].includes(source)) {
@@ -31,9 +32,16 @@ export async function saveCurrencySettingsAction(_prev: State, formData: FormDat
     }
   }
 
+  if (rawPhpRate) {
+    const phpRate = parseFloat(rawPhpRate);
+    if (isNaN(phpRate) || phpRate <= 0) {
+      return { error: "Enter a valid positive Peso rate, or leave it blank." };
+    }
+  }
+
   const rate = parseFloat(rawRate) || 83.5;
 
-  await prisma.$transaction([
+  const updates = [
     prisma.siteSetting.upsert({
       where: { key: "currency_source" },
       create: { key: "currency_source", value: source },
@@ -49,7 +57,19 @@ export async function saveCurrencySettingsAction(_prev: State, formData: FormDat
       create: { key: "currency_show_bar", value: showBar ? "true" : "false" },
       update: { value: showBar ? "true" : "false" },
     }),
-  ]);
+  ];
+
+  if (rawPhpRate) {
+    updates.push(
+      prisma.siteSetting.upsert({
+        where: { key: "currency_php_rate" },
+        create: { key: "currency_php_rate", value: rawPhpRate },
+        update: { value: rawPhpRate },
+      })
+    );
+  }
+
+  await prisma.$transaction(updates);
 
   revalidatePath("/", "layout");
   revalidatePath("/currency");
@@ -113,6 +133,26 @@ export async function saveShareAdminCutAction(_prev: State, formData: FormData):
   return { success: true };
 }
 
+// ── Share 4 (buy-request) platform cut (informational — never paid out) ──────
+
+export async function saveShare4AdminCutAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  const value = parseFloat(formData.get("percent") as string);
+  if (isNaN(value) || value < 0 || value > 100) {
+    return { error: "Enter a valid percentage between 0 and 100." };
+  }
+
+  await saveShare4AdminCutPercent(value);
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/shares");
+  return { success: true };
+}
+
 // ── User-to-user wallet transfer fee ─────────────────────────────────────────
 
 export async function saveTransferFeeAction(_prev: State, formData: FormData): Promise<State> {
@@ -148,8 +188,12 @@ export async function saveAdminNotificationEmailAction(_prev: State, formData: F
   if (!email || !emailRegex.test(email)) {
     return { error: "Enter a valid email address." };
   }
+  const phone = (formData.get("phone") as string)?.trim() ?? "";
 
-  await saveAdminNotificationEmail(email);
+  await Promise.all([
+    saveAdminNotificationEmail(email),
+    saveAdminNotificationPhone(phone),
+  ]);
 
   revalidatePath("/admin/settings");
   return { success: true };
@@ -174,6 +218,31 @@ export async function saveShareRateAction(_prev: State, formData: FormData): Pro
   revalidatePath("/shares");
   revalidatePath("/");
 
+  return { success: true };
+}
+
+// ── Share 4 (buy-request) offer amounts — fully admin-configurable ───────────
+
+export async function saveShare4AmountsAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  let amounts: number[];
+  try {
+    const parsed = JSON.parse(formData.get("amounts") as string);
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error();
+    amounts = parsed.map(Number);
+    if (amounts.some((n) => !Number.isFinite(n) || n <= 0)) throw new Error();
+  } catch {
+    return { error: "Add at least one valid amount." };
+  }
+
+  await saveShare4Amounts(amounts);
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/shares/buy-request");
   return { success: true };
 }
 

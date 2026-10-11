@@ -5,22 +5,25 @@ export type CurrencySource = "internet" | "manual";
 export type CurrencySettings = {
   source: CurrencySource;
   manualRate: number; // 1 SGD = X BDT
+  manualPhpRate: number | null; // 1 SGD = X PHP (Pesos) — null until admin sets one
   showBar: boolean;
 };
 
 export async function getCurrencySettings(): Promise<CurrencySettings> {
   try {
     const rows = await prisma.siteSetting.findMany({
-      where: { key: { in: ["currency_source", "currency_bdt_rate", "currency_show_bar"] } },
+      where: { key: { in: ["currency_source", "currency_bdt_rate", "currency_php_rate", "currency_show_bar"] } },
     });
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const phpRaw = map["currency_php_rate"] ? parseFloat(map["currency_php_rate"]) : NaN;
     return {
       source: (map["currency_source"] ?? "internet") as CurrencySource,
       manualRate: parseFloat(map["currency_bdt_rate"] ?? "83.5"),
+      manualPhpRate: isNaN(phpRaw) ? null : phpRaw,
       showBar: (map["currency_show_bar"] ?? "true") === "true",
     };
   } catch {
-    return { source: "internet", manualRate: 83.5, showBar: true };
+    return { source: "internet", manualRate: 83.5, manualPhpRate: null, showBar: true };
   }
 }
 
