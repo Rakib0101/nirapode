@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import { createShareListingAction } from "@/app/actions/shares";
-import { sgdToBdt } from "@/lib/share-pricing-utils";
 
 type Ownership = {
 	id: string;
@@ -14,12 +13,10 @@ type Ownership = {
 export function ResellForm({
 	ownerships,
 	selectedId,
-	rate,
 	sellableByOwnership,
 }: {
 	ownerships: Ownership[];
 	selectedId: string | null;
-	rate: number;
 	sellableByOwnership: Record<string, number[]>;
 }) {
 	const [state, action, pending] = useActionState(
@@ -35,7 +32,7 @@ export function ResellForm({
 	const selected = ownerships.find((o) => o.id === ownershipId);
 	const sellableNumbers = sellableByOwnership[ownershipId] ?? [];
 	const marketPrice = selected
-		? sgdToBdt(Number(selected.project.sharePriceSgd), rate)
+		? Number(selected.project.sharePriceSgd)
 		: 0;
 	const qty = selectedNumbers.length;
 	const total = qty * Number(price || 0);
@@ -153,7 +150,7 @@ export function ResellForm({
 			{/* Asking price */}
 			<div>
 				<label className="block text-sm font-medium text-foreground mb-1.5">
-					Asking Price per Share ($)
+					Asking Price per Share (৳)
 				</label>
 				<input
 					type="number"

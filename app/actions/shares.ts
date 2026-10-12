@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getReferredByAgentId } from "@/lib/commission";
-import { getShareSgdRate, sgdToBdt, getShare4Amounts } from "@/lib/share-pricing";
+import { getShareSgdRate, getShare4Amounts } from "@/lib/share-pricing";
 import { effectiveShareCertPrice } from "@/lib/share-pricing-utils";
 import { notifyAdmin } from "@/lib/notifications";
 import { getLockedShareNumbers, getListingRemainingCount } from "@/lib/share-listings";
@@ -64,13 +64,11 @@ export async function requestSharePurchaseAction(
     return { error: `Share number${unavailable.length > 1 ? "s" : ""} ${unavailable.map((n) => `#${String(n).padStart(4, "0")}`).join(", ")} ${unavailable.length > 1 ? "are" : "is"} no longer available. Please refresh and pick again.` };
   }
 
-  const rate = await getShareSgdRate();
   const projectSharePriceSgd = Number(project.sharePriceSgd);
-  const totalSgd = availableCerts.reduce(
+  const totalAmount = availableCerts.reduce(
     (sum, c) => sum + effectiveShareCertPrice(c.priceSgd != null ? Number(c.priceSgd) : null, projectSharePriceSgd),
     0
   );
-  const totalAmount = sgdToBdt(totalSgd, rate);
 
   const wallet = await prisma.wallet.findUnique({
     where: { userId: session.userId },

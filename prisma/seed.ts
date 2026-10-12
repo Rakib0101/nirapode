@@ -189,7 +189,7 @@ async function main() {
 			description:
 				"Diversified technology investment fund targeting Singapore-listed tech companies and startups. Annual dividend 8–12%.",
 			totalShares: 1000,
-			sharePriceSgd: 5.99,
+			sharePriceSgd: 600,
 			availableShares: 620,
 			status: "ACTIVE",
 			createdById: superAdmin.id,
@@ -202,7 +202,7 @@ async function main() {
 			description:
 				"Community-owned halal restaurant and food supply chain project across Singapore hawker centres and industrial areas.",
 			totalShares: 500,
-			sharePriceSgd: 2.4,
+			sharePriceSgd: 250,
 			availableShares: 310,
 			status: "ACTIVE",
 			createdById: admin.id,
@@ -215,7 +215,7 @@ async function main() {
 			description:
 				"Low-cost remittance service to Bangladesh using community pooled funds. Target rate: max 0.5% fee.",
 			totalShares: 300,
-			sharePriceSgd: 3.59,
+			sharePriceSgd: 350,
 			availableShares: 180,
 			status: "ACTIVE",
 			createdById: superAdmin.id,

@@ -78,7 +78,7 @@ export default async function AdminPurchasesPage() {
                     <p className="font-medium text-foreground max-w-40 truncate">{r.project.name}</p>
                     <p className="text-xs text-muted-foreground">
                       ৳{(Number(r.totalAmount) / Math.max(r.quantity, 1)).toFixed(2)}/share at request
-                      <span className="text-muted-foreground/70"> (now ${Number(r.project.sharePriceSgd).toFixed(2)} SGD)</span>
+                      <span className="text-muted-foreground/70"> (now ৳{Number(r.project.sharePriceSgd).toFixed(2)})</span>
                     </p>
                   </td>
                   <td className="px-4 py-3.5 font-medium text-foreground">

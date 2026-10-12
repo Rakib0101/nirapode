@@ -3,26 +3,23 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { requestSharePurchaseAction } from "@/app/actions/shares";
-import { sgdToBdt } from "@/lib/share-pricing-utils";
 
 type AvailableShare = { shareNumber: number; priceSgd: number };
 
 type Props = {
   projectId: string;
-  rate: number;
   availableShares: AvailableShare[];
   hasPending: boolean;
   isLoggedIn: boolean;
 };
 
-export function PurchaseForm({ projectId, rate, availableShares, hasPending, isLoggedIn }: Props) {
+export function PurchaseForm({ projectId, availableShares, hasPending, isLoggedIn }: Props) {
   const [state, action, pending] = useActionState(requestSharePurchaseAction, null);
   const [selected, setSelected] = useState<number[]>([]);
 
   const priceByNumber = new Map(availableShares.map((s) => [s.shareNumber, s.priceSgd]));
   const qty = selected.length;
-  const totalSgd = selected.reduce((sum, n) => sum + (priceByNumber.get(n) ?? 0), 0);
-  const total = sgdToBdt(totalSgd, rate);
+  const total = selected.reduce((sum, n) => sum + (priceByNumber.get(n) ?? 0), 0);
   const prices = availableShares.map((s) => s.priceSgd);
   const minPrice = prices.length ? Math.min(...prices) : 0;
   const maxPrice = prices.length ? Math.max(...prices) : 0;
@@ -68,8 +65,8 @@ export function PurchaseForm({ projectId, rate, availableShares, hasPending, isL
         <h3 className="font-bold text-foreground text-lg">Buy Shares</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
           {minPrice === maxPrice
-            ? `৳${sgdToBdt(minPrice, rate).toFixed(2)} per share`
-            : `৳${sgdToBdt(minPrice, rate).toFixed(2)} – ৳${sgdToBdt(maxPrice, rate).toFixed(2)} per share`}
+            ? `৳${minPrice.toFixed(2)} per share`
+            : `৳${minPrice.toFixed(2)} – ৳${maxPrice.toFixed(2)} per share`}
         </p>
       </div>
 
@@ -107,7 +104,7 @@ export function PurchaseForm({ projectId, rate, availableShares, hasPending, isL
                     }`}
                   >
                     <span className="text-xs font-mono font-medium">#{String(n).padStart(6, "0")}</span>
-                    <span className={`text-[10px] ${isSelected ? "text-white/80" : "text-muted-foreground/80"}`}>৳{sgdToBdt(priceSgd, rate).toFixed(0)}</span>
+                    <span className={`text-[10px] ${isSelected ? "text-white/80" : "text-muted-foreground/80"}`}>৳{priceSgd.toFixed(0)}</span>
                   </button>
                 );
               })}

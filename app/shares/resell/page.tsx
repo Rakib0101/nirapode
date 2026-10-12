@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getShareSgdRate } from "@/lib/share-pricing";
 import { getLockedShareNumbers } from "@/lib/share-listings";
 import { redirect } from "next/navigation";
 import { ResellForm } from "./resell-form";
@@ -28,14 +27,11 @@ export default async function ResellPage({
 
   const { ownershipId } = await searchParams;
 
-  const [ownerships, rate] = await Promise.all([
-    prisma.shareOwnership.findMany({
-      where: { ownerId: session.userId },
-      include: { project: { select: { id: true, name: true, sharePriceSgd: true, status: true } } },
-      orderBy: { acquiredAt: "desc" },
-    }),
-    getShareSgdRate(),
-  ]);
+  const ownerships = await prisma.shareOwnership.findMany({
+    where: { ownerId: session.userId },
+    include: { project: { select: { id: true, name: true, sharePriceSgd: true, status: true } } },
+    orderBy: { acquiredAt: "desc" },
+  });
 
   // Sellable numbers per ownership — fetched for all of them up front so the
   // client-side project switcher doesn't need a round-trip.
@@ -72,7 +68,7 @@ export default async function ResellPage({
               </Link>
             </div>
           ) : (
-            <ResellForm ownerships={ownerships} selectedId={ownershipId ?? null} rate={rate} sellableByOwnership={sellableByOwnership} />
+            <ResellForm ownerships={ownerships} selectedId={ownershipId ?? null} sellableByOwnership={sellableByOwnership} />
           )}
         </div>
 

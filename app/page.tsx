@@ -1,7 +1,6 @@
 import { MRTMapCard } from "@/components/mrt-map-button";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getShareSgdRate, sgdToBdt } from "@/lib/share-pricing";
 
 async function getFeaturedProjects() {
 	try {
@@ -187,15 +186,9 @@ const ICONS = {
 
 export default async function HomePage() {
 	let featuredProjects: Awaited<ReturnType<typeof getFeaturedProjects>> = [];
-	let shareRate = 83.5;
 
 	try {
-		const [projects, rate] = await Promise.all([
-			getFeaturedProjects(),
-			getShareSgdRate().catch(() => 83.5),
-		]);
-		featuredProjects = projects ?? [];
-		shareRate = typeof rate === "number" && !isNaN(rate) ? rate : 83.5;
+		featuredProjects = (await getFeaturedProjects()) ?? [];
 	} catch (err) {
 		console.error("HomePage data loading error:", err);
 	}
@@ -285,7 +278,7 @@ export default async function HomePage() {
 										</div>
 										<div className="text-right">
 											<p className="font-bold text-sm text-foreground">
-												৳{sgdToBdt(Number(project.sharePriceSgd ?? 0), shareRate).toFixed(2)}
+												৳{Number(project.sharePriceSgd ?? 0).toFixed(2)}
 											</p>
 											<p className="text-[11px] text-muted-foreground">
 												Per Share

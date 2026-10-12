@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import { requestShareTradeAction } from "@/app/actions/shares";
-import { sgdToBdt } from "@/lib/share-pricing-utils";
 import Link from "next/link";
 import type { SessionPayload } from "@/lib/session";
 
@@ -75,10 +74,10 @@ function TradeForm({ listing }: { listing: Listing }) {
   );
 }
 
-function ListingCard({ listing, session, rate }: { listing: Listing; session: SessionPayload | null; rate: number }) {
+function ListingCard({ listing, session }: { listing: Listing; session: SessionPayload | null }) {
   const [expanded, setExpanded] = useState(false);
   const askingPrice = Number(listing.askingPrice);
-  const marketPrice = sgdToBdt(Number(listing.project.sharePriceSgd), rate);
+  const marketPrice = Number(listing.project.sharePriceSgd);
   const diff = askingPrice - marketPrice;
   const pct = ((diff / marketPrice) * 100).toFixed(1);
 
@@ -156,11 +155,9 @@ function ListingCard({ listing, session, rate }: { listing: Listing; session: Se
 export function SecondaryMarket({
   listings,
   session,
-  rate,
 }: {
   listings: Listing[];
   session: SessionPayload | null;
-  rate: number;
 }) {
   if (listings.length === 0) {
     return (
@@ -184,7 +181,7 @@ export function SecondaryMarket({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {listings.map((l) => (
-          <ListingCard key={l.id} listing={l} session={session} rate={rate} />
+          <ListingCard key={l.id} listing={l} session={session} />
         ))}
       </div>
     </div>

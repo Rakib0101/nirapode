@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getShareSgdRate, sgdToBdt } from "@/lib/share-pricing";
 import { effectiveShareCertPrice } from "@/lib/share-pricing-utils";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -52,15 +51,14 @@ export default async function ShareDetailPage({
   const project = await getProject(id);
   if (!project) notFound();
 
-  const [session, rate, availableShares] = await Promise.all([
+  const [session, availableShares] = await Promise.all([
     getSession(),
-    getShareSgdRate(),
     getAvailableShares(id, Number(project.sharePriceSgd)),
   ]);
 
   const soldShares = project.totalShares - project.availableShares;
   const soldPct = Math.round((soldShares / project.totalShares) * 100);
-  const totalValue = sgdToBdt(Number(project.sharePriceSgd) * project.totalShares, rate);
+  const totalValue = Number(project.sharePriceSgd) * project.totalShares;
 
   const [ownership, pendingRequest] = session
     ? await Promise.all([
@@ -105,7 +103,7 @@ export default async function ShareDetailPage({
               {/* Stats row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
                 {[
-                  { label: "Share Price", value: `৳${sgdToBdt(Number(project.sharePriceSgd), rate).toFixed(2)}` },
+                  { label: "Share Price", value: `৳${Number(project.sharePriceSgd).toFixed(2)}` },
                   { label: "Total Shares", value: project.totalShares.toLocaleString() },
                   { label: "Available", value: project.availableShares.toLocaleString() },
                   { label: "Total Fund", value: `৳${totalValue.toLocaleString()}` },
@@ -180,7 +178,6 @@ export default async function ShareDetailPage({
           <div className="lg:col-span-1">
             <PurchaseForm
               projectId={project.id}
-              rate={rate}
               availableShares={availableShares}
               hasPending={!!pendingRequest}
               isLoggedIn={!!session}

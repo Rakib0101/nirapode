@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { getShareSgdRate } from "@/lib/share-pricing";
 import { getCommissionSetting, getShareAdminCutPercent, computeCommissionAmount } from "@/lib/commission";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -76,9 +75,8 @@ export default async function AdminProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, rate, shareCommission, adminCutPercent] = await Promise.all([
+  const [project, shareCommission, adminCutPercent] = await Promise.all([
     getProjectDetail(id),
-    getShareSgdRate(),
     getCommissionSetting("SHARE"),
     getShareAdminCutPercent(),
   ]);
@@ -135,7 +133,7 @@ export default async function AdminProjectDetailPage({
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Share Price", value: `$${Number(project.sharePriceSgd).toFixed(2)} SGD (1 SGD = ৳${rate.toFixed(2)})` },
+          { label: "Share Price", value: `৳${Number(project.sharePriceSgd).toFixed(2)}` },
           { label: "Total Shares", value: project.totalShares.toLocaleString() },
           { label: "Sold Shares", value: soldShares.toLocaleString() },
           { label: "Available", value: project.availableShares.toLocaleString() },

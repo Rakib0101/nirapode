@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getShareSgdRate, sgdToBdt } from "@/lib/share-pricing";
+import { getShareSgdRate } from "@/lib/share-pricing";
 import { getCommissionSetting, getShare4AdminCutPercent, computeCommissionAmount } from "@/lib/commission";
 import { CreateProjectForm } from "./create-form";
 import { ResellActions } from "./resell-actions";
@@ -153,7 +153,7 @@ export default async function AdminSharesPage() {
                     <div className="flex gap-4 mt-2 text-xs">
                       <span>Qty: <strong className="text-foreground">{l.quantity}</strong></span>
                       <span>Asking: <strong className="text-foreground">৳{Number(l.askingPrice).toFixed(2)}</strong></span>
-                      <span>Market: <strong className="text-foreground">৳{sgdToBdt(Number(l.project.sharePriceSgd), rate).toFixed(2)}</strong></span>
+                      <span>Market: <strong className="text-foreground">৳{Number(l.project.sharePriceSgd).toFixed(2)}</strong></span>
                       <span>Total: <strong className="text-foreground">৳{(l.quantity * Number(l.askingPrice)).toFixed(2)}</strong></span>
                     </div>
                     {l.listedShareNumbers.length > 0 && (

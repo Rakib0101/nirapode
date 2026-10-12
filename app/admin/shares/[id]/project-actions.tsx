@@ -92,7 +92,7 @@ export function ProjectActions({ project }: { project: Project }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-foreground mb-1">Price per Share (SGD)</label>
+                  <label className="block text-xs font-medium text-foreground mb-1">Price per Share (BDT ৳)</label>
                   <input name="sharePriceSgd" type="number" required min={0.01} step={0.01} defaultValue={project.sharePriceSgd} className={INPUT} />
                 </div>
                 <div>
