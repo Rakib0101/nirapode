@@ -107,7 +107,10 @@ export async function requestPinResetOtpAction(
 const confirmPinResetSchema = z
   .object({
     otp: z.string().min(1, "Enter the code we emailed you"),
-    pin: z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits"),
+    pin: z
+      .string()
+      .regex(/^\d{4}$/, "PIN must be exactly 4 digits")
+      .refine((v) => v !== "0000", "0000 is too easy to guess — choose a different PIN"),
     confirmPin: z.string(),
   })
   .refine((data) => data.pin === data.confirmPin, {

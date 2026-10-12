@@ -35,7 +35,11 @@ export default function SetPinPage() {
             maxLength={4}
             placeholder="••••"
             value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+              if (digits === "0000") return; // too easy to guess — reject the completion, keep typing
+              setPin(digits);
+            }}
             required
             className="w-full text-center tracking-[1em] text-2xl font-mono px-3.5 py-3 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-colors"
           />
