@@ -1,13 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getShareSgdRate } from "@/lib/share-pricing";
-import { getCommissionSetting, getShare4AdminCutPercent, computeCommissionAmount } from "@/lib/commission";
 import { CreateProjectForm } from "./create-form";
 import { ResellActions } from "./resell-actions";
 import { ResetDemoSharesButton } from "@/components/reset-demo-shares-button";
 import Link from "next/link";
 
 async function getData() {
-  const [projects, pendingListings, pendingTrades, pendingBuyRequests] = await Promise.all([
+  const [projects, pendingListings, pendingTrades] = await Promise.all([
     prisma.project.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -45,16 +44,8 @@ async function getData() {
         },
       },
     }),
-    prisma.shareBuyRequest.findMany({
-      where: { status: "PENDING" },
-      orderBy: { createdAt: "desc" },
-      include: {
-        buyer: { select: { fullName: true, email: true, phone: true } },
-        referredBy: { select: { fullName: true } },
-      },
-    }),
   ]);
-  return { projects, pendingListings, pendingTrades, pendingBuyRequests };
+  return { projects, pendingListings, pendingTrades };
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -64,11 +55,9 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function AdminSharesPage() {
-  const [{ projects, pendingListings, pendingTrades, pendingBuyRequests }, rate, share4Commission, share4AdminCutPercent] = await Promise.all([
+  const [{ projects, pendingListings, pendingTrades }, rate] = await Promise.all([
     getData(),
     getShareSgdRate(),
-    getCommissionSetting("SHARE_BUY_REQUEST"),
-    getShare4AdminCutPercent(),
   ]);
 
   return (
@@ -77,60 +66,11 @@ export default async function AdminSharesPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Share Management</h1>
           <p className="text-sm text-muted-foreground">
-            {projects.length} projects · {pendingListings.length} pending resell listings · {pendingTrades.length} pending trades · {pendingBuyRequests.length} pending buy requests
+            {projects.length} projects · {pendingListings.length} pending resell listings · {pendingTrades.length} pending trades
           </p>
         </div>
         <ResetDemoSharesButton />
       </div>
-
-      {/* Pending buy requests */}
-      {pendingBuyRequests.length > 0 && (
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-border bg-purple-50">
-            <h2 className="font-semibold text-purple-800">
-              Pending Buy Requests ({pendingBuyRequests.length})
-            </h2>
-            <p className="text-xs text-purple-700 mt-0.5">General requests to buy shares, not tied to a specific project</p>
-          </div>
-          <div className="divide-y divide-border">
-            {pendingBuyRequests.map((r) => (
-              <div key={r.id} className="px-6 py-4">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-foreground">{r.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Buyer: {r.buyer.fullName} · {r.buyer.email} · {r.buyer.phone}
-                    </p>
-                    <div className="flex gap-4 mt-2 text-xs">
-                      <span>Share #: <strong className="text-foreground font-mono">{r.shareNumber}</strong></span>
-                      <span>Size: <strong className="text-foreground">{r.size}</strong></span>
-                      <span>Offered: <strong className="text-foreground">৳{Number(r.price).toFixed(2)}</strong> <span className="text-muted-foreground font-normal">(~${(Number(r.price) / Number(r.sgdRate ?? rate)).toFixed(2)} SGD)</span></span>
-                      <span>Preferred Date: <strong className="text-foreground">{r.preferredDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</strong></span>
-                    </div>
-                    <p className="text-xs mt-1.5">
-                      {r.referredBy ? (
-                        <span className="text-foreground">
-                          Agent <span className="text-muted-foreground">({r.referredBy.fullName})</span>: <strong>৳{computeCommissionAmount(share4Commission, Number(r.price)).toFixed(2)}</strong>
-                          <span className="text-muted-foreground"> ({share4Commission.mode === "PERCENTAGE" ? `${share4Commission.value}%` : `flat ৳${share4Commission.value}`})</span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">No referring agent</span>
-                      )}
-                      {share4AdminCutPercent > 0 && (
-                        <span className="text-foreground">
-                          {" · "}Platform: <strong>৳{(Number(r.price) * (share4AdminCutPercent / 100)).toFixed(2)}</strong>
-                          <span className="text-muted-foreground"> ({share4AdminCutPercent}%)</span>
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <ResellActions buyRequestId={r.id} type="buyRequest" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Pending resell listings */}
       {pendingListings.length > 0 && (

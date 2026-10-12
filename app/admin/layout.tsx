@@ -7,15 +7,16 @@ import { prisma } from "@/lib/prisma";
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
 async function getPendingCounts() {
-  const [purchases, deposits, withdrawals, taxi, airTicket, checkouts] = await Promise.all([
+  const [sharePurchases, shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts] = await Promise.all([
     prisma.sharePurchaseRequest.count({ where: { status: "PENDING" } }),
+    prisma.shareBuyRequest.count({ where: { status: "PENDING" } }),
     prisma.depositRequest.count({ where: { status: "PENDING" } }),
     prisma.withdrawalRequest.count({ where: { status: "PENDING" } }),
     prisma.taxiRequest.count({ where: { status: "PENDING" } }),
     prisma.airTicketRequest.count({ where: { status: "PENDING" } }),
     prisma.checkout.count({ where: { status: "AWAITING_PAYMENT" } }),
   ]);
-  return { purchases, deposits, withdrawals, taxi, airTicket, checkouts };
+  return { purchases: sharePurchases + shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts };
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

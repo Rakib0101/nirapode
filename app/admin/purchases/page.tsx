@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { getCommissionSetting, computeCommissionAmount } from "@/lib/commission";
+import { getCommissionSetting, computeCommissionAmount, getShare4AdminCutPercent } from "@/lib/commission";
 import { getShareAdminCutPercent } from "@/lib/commission";
+import { getShareSgdRate } from "@/lib/share-pricing";
 import { ProcessPurchaseForm } from "./process-form";
 import { ScreenshotViewerModal } from "@/components/screenshot-modal";
+import { ResellActions } from "@/app/admin/shares/resell-actions";
 
 async function getPurchaseRequests() {
   return prisma.sharePurchaseRequest.findMany({
@@ -10,6 +12,17 @@ async function getPurchaseRequests() {
     include: {
       buyer: { select: { fullName: true, email: true, nidNumber: true } },
       project: { select: { name: true, sharePriceSgd: true } },
+      referredBy: { select: { fullName: true } },
+    },
+  });
+}
+
+async function getPendingBuyRequests() {
+  return prisma.shareBuyRequest.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "desc" },
+    include: {
+      buyer: { select: { fullName: true, email: true, phone: true } },
       referredBy: { select: { fullName: true } },
     },
   });
@@ -32,24 +45,78 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default async function AdminPurchasesPage() {
-  const [requests, shareCommission, adminCutPercent] = await Promise.all([
+  const [requests, shareCommission, adminCutPercent, pendingBuyRequests, share4Rate, share4Commission, share4AdminCutPercent] = await Promise.all([
     getPurchaseRequests(),
     getCommissionSetting("SHARE"),
     getShareAdminCutPercent(),
+    getPendingBuyRequests(),
+    getShareSgdRate(),
+    getCommissionSetting("SHARE_BUY_REQUEST"),
+    getShare4AdminCutPercent(),
   ]);
   const pending = requests.filter((r) => r.status === "PENDING");
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-6xl mx-auto space-y-8">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Purchase Requests</h1>
           <p className="text-sm text-muted-foreground">
-            {pending.length} pending · {requests.length} total
+            {pending.length} pending · {requests.length} total · {pendingBuyRequests.length} pending buy requests
           </p>
         </div>
       </div>
 
+      {/* Pending buy requests — Share 4, general requests not tied to a project */}
+      {pendingBuyRequests.length > 0 && (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-purple-50">
+            <h2 className="font-semibold text-purple-800">
+              Pending Buy Requests ({pendingBuyRequests.length})
+            </h2>
+            <p className="text-xs text-purple-700 mt-0.5">General requests to buy shares, not tied to a specific project</p>
+          </div>
+          <div className="divide-y divide-border">
+            {pendingBuyRequests.map((r) => (
+              <div key={r.id} className="px-6 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-foreground">{r.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Buyer: {r.buyer.fullName} · {r.buyer.email} · {r.buyer.phone}
+                    </p>
+                    <div className="flex gap-4 mt-2 text-xs">
+                      <span>Share #: <strong className="text-foreground font-mono">{r.shareNumber}</strong></span>
+                      <span>Size: <strong className="text-foreground">{r.size}</strong></span>
+                      <span>Offered: <strong className="text-foreground">৳{Number(r.price).toFixed(2)}</strong> <span className="text-muted-foreground font-normal">(~${(Number(r.price) / Number(r.sgdRate ?? share4Rate)).toFixed(2)} SGD)</span></span>
+                      <span>Preferred Date: <strong className="text-foreground">{r.preferredDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</strong></span>
+                    </div>
+                    <p className="text-xs mt-1.5">
+                      {r.referredBy ? (
+                        <span className="text-foreground">
+                          Agent <span className="text-muted-foreground">({r.referredBy.fullName})</span>: <strong>৳{computeCommissionAmount(share4Commission, Number(r.price)).toFixed(2)}</strong>
+                          <span className="text-muted-foreground"> ({share4Commission.mode === "PERCENTAGE" ? `${share4Commission.value}%` : `flat ৳${share4Commission.value}`})</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">No referring agent</span>
+                      )}
+                      {share4AdminCutPercent > 0 && (
+                        <span className="text-foreground">
+                          {" · "}Platform: <strong>৳{(Number(r.price) * (share4AdminCutPercent / 100)).toFixed(2)}</strong>
+                          <span className="text-muted-foreground"> ({share4AdminCutPercent}%)</span>
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <ResellActions buyRequestId={r.id} type="buyRequest" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <h2 className="text-base font-semibold text-foreground">Share Purchase Requests</h2>
       <div className="bg-white rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
