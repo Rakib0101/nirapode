@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ScreenshotViewer } from "./screenshot-viewer";
 import { ShareNumbersManager } from "./share-numbers";
 import { ProjectActions } from "./project-actions";
+import { ShareholdersChart } from "./shareholders-chart";
 
 async function getProjectDetail(id: string) {
   return prisma.project.findUnique({
@@ -175,6 +176,12 @@ export default async function AdminProjectDetailPage({
           <h2 className="font-semibold text-foreground">
             Shareholders <span className="text-muted-foreground font-normal text-sm">({project.shares.length})</span>
           </h2>
+        </div>
+        <div className="px-5 py-5 border-b border-border">
+          <ShareholdersChart
+            holders={project.shares.map((s) => ({ name: s.owner.fullName, quantity: s.quantity }))}
+            availableShares={project.availableShares}
+          />
         </div>
         {project.shares.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">No shareholders yet.</p>
