@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Shell } from "@/components/shell";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { getSession } from "@/lib/session";
 import { CurrencyRateBar } from "@/components/currency-rate-bar";
 import { prisma } from "@/lib/prisma";
@@ -21,6 +22,18 @@ export const metadata: Metadata = {
   title: "Singapur Probashi – Bangladesh Community in Singapore",
   description:
     "Complete community platform for Bangladeshi expatriates in Singapore. Share investments, air tickets, currency converter, Islamic center, and more.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Singapur Probashi",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#8133f1",
 };
 
 export default async function RootLayout({
@@ -67,6 +80,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
+        <ServiceWorkerRegister />
         <Shell
           user={session}
           rateBar={<CurrencyRateBar />}
