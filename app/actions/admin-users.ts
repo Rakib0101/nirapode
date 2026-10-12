@@ -182,7 +182,10 @@ export async function deleteUserAction(
       return { error: `This user has ${openPickPut} open Pick & Put booking(s) holding funds. Deliver or reject them first.` };
     }
 
-    // Clean up all related user records in an atomic transaction
+    // Clean up all related user records in an atomic transaction. This touches
+    // ~35 tables sequentially (Prisma interactive transactions can't run
+    // concurrent queries on the same tx), which comfortably exceeds the
+    // client's default 5000ms transaction timeout over a remote DB connection.
     await prisma.$transaction(async (tx) => {
       // 1. Disassociate agent and admin assignments
       await tx.user.updateMany({ where: { referredByAgentId: userId }, data: { referredByAgentId: null } });
@@ -247,7 +250,7 @@ export async function deleteUserAction(
 
       // 4. Delete the user
       await tx.user.delete({ where: { id: userId } });
-    });
+    }, { timeout: 20000 });
 
     revalidatePath("/", "layout");
     revalidatePath("/admin/users");
