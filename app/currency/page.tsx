@@ -67,6 +67,7 @@ export default async function CurrencyPage() {
         <BankCalculator
           defaultRate={effectiveRate}
           isManual={isManual}
+          manualPhpRate={settings.manualPhpRate}
         />
 
         {/* Bank rate cards */}

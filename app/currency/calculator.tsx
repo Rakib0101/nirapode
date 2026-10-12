@@ -6,29 +6,49 @@ import { useState } from "react";
 type Props = {
 	defaultRate: number;
 	isManual: boolean;
+	manualPhpRate?: number | null;
 };
 
-export function BankCalculator({ defaultRate, isManual }: Props) {
-	const [amount, setAmount] = useState("1");
-	const [reversed, setReversed] = useState(false); // false = SGD→BDT, true = BDT→SGD
+const CURRENCY_META = {
+	BDT: { symbol: "৳", label: "BDT" },
+	PHP: { symbol: "₱", label: "PHP" },
+} as const;
 
-	const rate = defaultRate;
+export function BankCalculator({ defaultRate, isManual, manualPhpRate }: Props) {
+	const [amount, setAmount] = useState("1");
+	const [reversed, setReversed] = useState(false); // false = SGD→target, true = target→SGD
+	const [target, setTarget] = useState<"BDT" | "PHP">("BDT");
+
+	const rate = target === "PHP" ? (manualPhpRate ?? defaultRate) : defaultRate;
 
 	const numAmount = parseFloat(amount) || 0;
 	const result = reversed ? numAmount / rate : numAmount * rate;
 	// Deposits/withdrawals are always in BDT — whichever side of the
 	// conversion that is becomes the amount carried over to those forms.
-	const bdtAmount = reversed ? numAmount : result;
+	// Only meaningful when converting against BDT (not PHP).
+	const bdtAmount = target === "BDT" ? (reversed ? numAmount : result) : 0;
 	const bdtParam = bdtAmount > 0 ? `?amount=${bdtAmount.toFixed(2)}` : "";
 
-	const fromCurrency = reversed ? "BDT" : "SGD";
-	const toCurrency = reversed ? "SGD" : "BDT";
-	const fromSymbol = reversed ? "৳" : "$";
-	const toSymbol = reversed ? "$" : "৳";
+	const fromCurrency = reversed ? CURRENCY_META[target].label : "SGD";
+	const toCurrency = reversed ? "SGD" : CURRENCY_META[target].label;
+	const fromSymbol = reversed ? CURRENCY_META[target].symbol : "$";
+	const toSymbol = reversed ? "$" : CURRENCY_META[target].symbol;
 
 	return (
 		<div className="bg-white rounded-2xl border border-border p-6">
-			<h2 className="font-semibold text-foreground mb-5">Convert Currency</h2>
+			<div className="flex items-center justify-between mb-5">
+				<h2 className="font-semibold text-foreground">Convert Currency</h2>
+				{manualPhpRate != null && (
+					<select
+						value={target}
+						onChange={(e) => setTarget(e.target.value as "BDT" | "PHP")}
+						className="text-xs font-semibold text-foreground bg-muted border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand cursor-pointer"
+					>
+						<option value="BDT">BDT</option>
+						<option value="PHP">PHP</option>
+					</select>
+				)}
+			</div>
 
 			<div className="flex flex-row gap-3 items-end">
 				{/* Amount input */}
@@ -90,13 +110,14 @@ export function BankCalculator({ defaultRate, isManual }: Props) {
 					</span>
 				</p>
 				<p className="text-xs text-muted-foreground mt-2">
-					Rate: 1 SGD = {rate.toFixed(4)} ৳ BDT
+					Rate: 1 SGD = {rate.toFixed(4)} {CURRENCY_META[target].symbol} {CURRENCY_META[target].label}
 					<span className="ml-1 text-brand/70">
-						({isManual ? "Admin rate" : "Live rate"})
+						({target === "PHP" ? "Admin rate" : isManual ? "Admin rate" : "Live rate"})
 					</span>
 				</p>
 			</div>
 
+			{target === "BDT" ? (
 			<div className="flex flex-col sm:flex-row gap-3 mt-4">
 				<Link
 					href={`/dashboard/deposit${bdtParam}`}
@@ -111,6 +132,11 @@ export function BankCalculator({ defaultRate, isManual }: Props) {
 					Withdraw from Wallet
 				</Link>
 			</div>
+			) : (
+				<p className="mt-4 text-xs text-muted-foreground text-center">
+					Wallet deposits and withdrawals are in BDT — switch the currency above to BDT to continue.
+				</p>
+			)}
 		</div>
 	);
 }
