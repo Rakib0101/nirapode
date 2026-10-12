@@ -12,6 +12,18 @@ async function requireUser() {
   return session;
 }
 
+// Client caps uploads at 2MB, but base64 inflates size ~33% and a malicious
+// client could skip that check entirely — enforce the real ceiling here too.
+const MAX_IMAGE_DATA_URL_LENGTH = 3_000_000;
+
+function parseImageUrl(raw: FormDataEntryValue | null): { imageUrl: string | null; error?: string } {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value) return { imageUrl: null };
+  if (!value.startsWith("data:image/")) return { imageUrl: null, error: "Invalid image." };
+  if (value.length > MAX_IMAGE_DATA_URL_LENGTH) return { imageUrl: null, error: "Image is too large." };
+  return { imageUrl: value };
+}
+
 const topicSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(150),
   category: z.string().min(2, "Select a category"),
@@ -34,12 +46,16 @@ export async function createTopicAction(
     return { error: parse.error.issues[0].message };
   }
 
+  const { imageUrl, error: imageError } = parseImageUrl(formData.get("imageUrl"));
+  if (imageError) return { error: imageError };
+
   const topic = await prisma.forumTopic.create({
     data: {
       userId: session.userId,
       title: parse.data.title,
       category: parse.data.category,
       content: parse.data.content,
+      imageUrl,
     },
   });
 
@@ -67,11 +83,15 @@ export async function createReplyAction(
     return { error: parse.error.issues[0].message };
   }
 
+  const { imageUrl, error: imageError } = parseImageUrl(formData.get("imageUrl"));
+  if (imageError) return { error: imageError };
+
   await prisma.forumReply.create({
     data: {
       userId: session.userId,
       topicId: parse.data.topicId,
       content: parse.data.content,
+      imageUrl,
     },
   });
 

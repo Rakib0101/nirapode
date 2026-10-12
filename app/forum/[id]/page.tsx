@@ -69,6 +69,9 @@ export default async function TopicDetailPage({
           <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap pt-2">
             {topic.content}
           </div>
+          {topic.imageUrl && (
+            <img src={topic.imageUrl} alt="" className="mt-3 max-h-96 rounded-xl border border-border object-contain" />
+          )}
         </div>
 
         {/* Replies Section */}
@@ -102,6 +105,9 @@ export default async function TopicDetailPage({
                 <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap pt-1 pl-8">
                   {reply.content}
                 </p>
+                {reply.imageUrl && (
+                  <img src={reply.imageUrl} alt="" className="max-h-72 rounded-lg border border-border object-contain ml-8" />
+                )}
               </div>
             ))}
 

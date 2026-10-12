@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createTopicAction } from "@/app/actions/forum";
+import { ImageUploadField } from "@/components/image-upload-field";
 
 const CATEGORIES = ["General", "Jobs & Career", "Transport & Housing", "Remittance & Finance", "Legal & Visa"];
 
@@ -45,6 +46,11 @@ export function NewTopicForm() {
           placeholder="Write details about your question or topic..."
           className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
         />
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-foreground mb-1.5">Photo (optional)</label>
+        <ImageUploadField />
       </div>
 
       {state?.error && (

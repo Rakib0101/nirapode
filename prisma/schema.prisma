@@ -935,6 +935,7 @@ model ForumTopic {
   userId    String
   title     String
   content   String
+  imageUrl  String?
   category  String       @default("General")
   views     Int          @default(0)
   createdAt DateTime     @default(now())
@@ -952,6 +953,7 @@ model ForumReply {
   topicId   String
   userId    String
   content   String
+  imageUrl  String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
