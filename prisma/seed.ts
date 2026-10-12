@@ -80,6 +80,29 @@ async function main() {
 		},
 	});
 
+	// Dedicated client-facing admin login — deliberately NOT in SEED_EMAILS /
+	// the demo-data cleanup above, since this is a real credential meant to
+	// persist across reseeds, not throwaway test data. upsert keeps reseeding
+	// idempotent instead of failing on a duplicate email.
+	await prisma.user.upsert({
+		where: { email: "admin@nirapode.com" },
+		update: {},
+		create: {
+			fullName: "Nirapode Admin",
+			email: "admin@nirapode.com",
+			phone: "+65 9000 0000",
+			passwordHash: await bcrypt.hash("Maple7410!", 12),
+			role: "SUPER_ADMIN",
+			isVerified: true,
+		},
+	}).then(async (clientAdmin) => {
+		await prisma.wallet.upsert({
+			where: { userId: clientAdmin.id },
+			update: {},
+			create: { userId: clientAdmin.id, balance: 0 },
+		});
+	});
+
 	const moderator = await prisma.user.create({
 		data: {
 			fullName: "Tasnim Hossain",
