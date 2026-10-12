@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Shell } from "@/components/shell";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { InstallPwaButton } from "@/components/install-pwa-button";
 import { getSession } from "@/lib/session";
 import { CurrencyRateBar } from "@/components/currency-rate-bar";
 import { prisma } from "@/lib/prisma";
@@ -81,6 +82,7 @@ export default async function RootLayout({
     >
       <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
         <ServiceWorkerRegister />
+        <InstallPwaButton />
         <Shell
           user={session}
           rateBar={<CurrencyRateBar />}
