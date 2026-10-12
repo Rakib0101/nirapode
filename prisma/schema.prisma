@@ -1052,3 +1052,17 @@ model PickPutBooking {
   @@index([tripId])
   @@index([customerId])
 }
+
+// Logos shown in the homepage "Partner Companies" strip — purely a display
+// list, admin-managed, no relation to any other business logic.
+model PartnerCompany {
+  id         String   @id @default(cuid())
+  name       String
+  logoUrl    String
+  websiteUrl String?
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([isActive, sortOrder])
+}

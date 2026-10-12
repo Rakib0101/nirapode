@@ -1,4 +1,5 @@
 import { MRTMapCard } from "@/components/mrt-map-button";
+import { PartnerCompaniesSection } from "@/components/partner-companies-section";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -296,6 +297,7 @@ export default async function HomePage() {
 				</div>
 			</section>
 
+			<PartnerCompaniesSection />
 		</>
 	);
 }
