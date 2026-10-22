@@ -1,7 +1,7 @@
 import { getCurrencySettings, getLiveBdtRate } from "@/lib/currency";
 import { getAllCommissionSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
 import { getShareSgdRate, getShare4Amounts } from "@/lib/share-pricing";
-import { getAdminNotificationEmail, getAdminNotificationPhone } from "@/lib/notifications";
+import { getAdminNotificationEmail, getAdminNotificationPhone, getModuleNotificationOverride } from "@/lib/notifications";
 import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings } from "@/app/actions/admin-settings";
 import { getSiteContactSettings } from "@/lib/site-contact";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +12,7 @@ import { SharePricingForm } from "./share-pricing-form";
 import { ShareAdminCutForm } from "./share-admin-cut-form";
 import { Share4AmountsForm } from "./share4-amounts-form";
 import { NotificationEmailForm } from "./notification-email-form";
+import { ModuleNotificationForm } from "./module-notification-form";
 import { PaymentAccountsForm } from "./payment-accounts-form";
 import { AdSenseSettingsForm } from "./adsense-form";
 import { ReminderPriceForm } from "./reminder-price-form";
@@ -67,6 +68,11 @@ export default async function AdminSettingsPage() {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const proto = requestHeaders.get("x-forwarded-proto") ?? "https";
   const reminderCronUrl = `${proto}://${host}/api/cron/reminders?key=${reminderCronKey}`;
+
+  const [share4Notify, share6Notify] = await Promise.all([
+    getModuleNotificationOverride("SHARE4"),
+    getModuleNotificationOverride("SHARE6"),
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -292,6 +298,13 @@ export default async function AdminSettingsPage() {
         </div>
         <div className="p-6">
           <NotificationEmailForm email={notificationEmail} phone={notificationPhone} />
+          <div className="mt-6 pt-6 border-t border-border space-y-5">
+            <p className="text-xs text-muted-foreground">
+              Optional overrides — route Share 4 and Share 6 alerts to different people. Leave blank to use the default above.
+            </p>
+            <ModuleNotificationForm module="SHARE4" label="Share 4" email={share4Notify.email} phone={share4Notify.phone} />
+            <ModuleNotificationForm module="SHARE6" label="Share 6" email={share6Notify.email} phone={share6Notify.phone} />
+          </div>
         </div>
       </div>
 

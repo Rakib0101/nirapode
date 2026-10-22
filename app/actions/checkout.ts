@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { creditCommission } from "@/lib/commission";
+import { notifyAdmin } from "@/lib/notifications";
 
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -290,7 +291,10 @@ export async function submitCheckoutPaymentAction(
     return { error: "Please provide a transaction ID or upload a payment screenshot." };
   }
 
-  const checkout = await prisma.checkout.findUnique({ where: { token } });
+  const checkout = await prisma.checkout.findUnique({
+    where: { token },
+    include: { user: { select: { fullName: true, email: true } } },
+  });
   if (!checkout) return { error: "Checkout not found." };
   if (checkout.status !== "AWAITING_PAYMENT" && checkout.status !== "REJECTED") {
     return { error: "This checkout is not awaiting payment." };
@@ -308,6 +312,18 @@ export async function submitCheckoutPaymentAction(
       status: "PROOF_SUBMITTED",
       adminNote: null,
     },
+  });
+
+  await notifyAdmin({
+    subject: `Payment submitted for checkout — ৳${Number(checkout.totalAmount).toFixed(2)}`,
+    heading: "Checkout Payment Submitted",
+    lines: [
+      { label: "Customer", value: `${checkout.user.fullName} (${checkout.user.email})` },
+      { label: "Amount", value: `৳${Number(checkout.totalAmount).toFixed(2)}` },
+      { label: "Payment Method", value: paymentMethod },
+      ...(txId ? [{ label: "Transaction ID", value: txId }] : []),
+    ],
+    actionPath: "/admin/checkouts",
   });
 
   return { success: true };

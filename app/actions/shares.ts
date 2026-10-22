@@ -104,6 +104,7 @@ export async function requestSharePurchaseAction(
       { label: "Payment", value: "Platform Wallet" },
     ],
     actionPath: "/admin/purchases",
+    module: "SHARE6",
   });
 
   return {
@@ -194,6 +195,7 @@ export async function createShareListingAction(
       { label: "Asking Price", value: `৳${Number(askingPrice).toFixed(2)}/share` },
     ],
     actionPath: "/admin/shares",
+    module: "SHARE6",
   });
 
   return {
@@ -268,6 +270,7 @@ export async function requestShareTradeAction(
       { label: "Payment", value: "Platform Wallet" },
     ],
     actionPath: "/admin/shares",
+    module: "SHARE6",
   });
 
   return {
@@ -365,7 +368,8 @@ export async function createShareBuyRequestAction(
       { label: "Offered Price", value: `৳${offeredBdt.toFixed(2)}` },
       { label: "Preferred Date", value: preferredDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
     ],
-    actionPath: "/admin/shares",
+    actionPath: "/admin/purchases",
+    module: "SHARE4",
   });
 
   return {

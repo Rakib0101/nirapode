@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { COMMISSION_MODULES, saveCommissionSetting, saveShareAdminCutPercent, saveShare4AdminCutPercent, type CommissionMode } from "@/lib/commission";
 import { saveShareSgdRate, saveShare4Amounts } from "@/lib/share-pricing";
-import { saveAdminNotificationEmail, saveAdminNotificationPhone } from "@/lib/notifications";
+import { saveAdminNotificationEmail, saveAdminNotificationPhone, type NotifyModule } from "@/lib/notifications";
 import { saveTransferFeeSetting } from "@/lib/wallet";
 
 type State = { error?: string; success?: boolean } | null;
@@ -193,6 +193,32 @@ export async function saveAdminNotificationEmailAction(_prev: State, formData: F
   await Promise.all([
     saveAdminNotificationEmail(email),
     saveAdminNotificationPhone(phone),
+  ]);
+
+  revalidatePath("/admin/settings");
+  return { success: true };
+}
+
+// Per-module override (Share 4 / Share 6) — both fields optional. Leaving
+// either blank clears that override, falling back to the global contact above.
+export async function saveModuleNotificationAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  const module = formData.get("module") as NotifyModule;
+  if (module !== "SHARE4" && module !== "SHARE6") return { error: "Invalid module." };
+
+  const email = (formData.get("email") as string)?.trim() ?? "";
+  if (email && !emailRegex.test(email)) {
+    return { error: "Enter a valid email address, or leave it blank." };
+  }
+  const phone = (formData.get("phone") as string)?.trim() ?? "";
+
+  await Promise.all([
+    saveAdminNotificationEmail(email, module),
+    saveAdminNotificationPhone(phone, module),
   ]);
 
   revalidatePath("/admin/settings");

@@ -5,8 +5,21 @@ import { sendWhatsAppMessage } from "@/lib/whatsapp-server";
 const ADMIN_EMAIL_KEY = "admin_notification_email";
 const ADMIN_PHONE_KEY = "admin_notification_phone";
 
-export async function getAdminNotificationEmail(): Promise<string | null> {
+// Optional per-module override (currently SHARE4 / SHARE6) — falls back to
+// the global admin contact above when unset. Lets the client route Share 4
+// and Share 6 order alerts to two different people.
+export type NotifyModule = "SHARE4" | "SHARE6";
+
+function moduleKey(base: string, module?: NotifyModule) {
+  return module ? `${base}_${module.toLowerCase()}` : base;
+}
+
+export async function getAdminNotificationEmail(module?: NotifyModule): Promise<string | null> {
   try {
+    if (module) {
+      const row = await prisma.siteSetting.findUnique({ where: { key: moduleKey(ADMIN_EMAIL_KEY, module) } });
+      if (row?.value?.trim()) return row.value.trim();
+    }
     const row = await prisma.siteSetting.findUnique({ where: { key: ADMIN_EMAIL_KEY } });
     return row?.value?.trim() || null;
   } catch {
@@ -14,16 +27,21 @@ export async function getAdminNotificationEmail(): Promise<string | null> {
   }
 }
 
-export async function saveAdminNotificationEmail(email: string): Promise<void> {
+export async function saveAdminNotificationEmail(email: string, module?: NotifyModule): Promise<void> {
+  const key = moduleKey(ADMIN_EMAIL_KEY, module);
   await prisma.siteSetting.upsert({
-    where: { key: ADMIN_EMAIL_KEY },
-    create: { key: ADMIN_EMAIL_KEY, value: email },
+    where: { key },
+    create: { key, value: email },
     update: { value: email },
   });
 }
 
-export async function getAdminNotificationPhone(): Promise<string | null> {
+export async function getAdminNotificationPhone(module?: NotifyModule): Promise<string | null> {
   try {
+    if (module) {
+      const row = await prisma.siteSetting.findUnique({ where: { key: moduleKey(ADMIN_PHONE_KEY, module) } });
+      if (row?.value?.trim()) return row.value.trim();
+    }
     const row = await prisma.siteSetting.findUnique({ where: { key: ADMIN_PHONE_KEY } });
     return row?.value?.trim() || null;
   } catch {
@@ -31,10 +49,26 @@ export async function getAdminNotificationPhone(): Promise<string | null> {
   }
 }
 
-export async function saveAdminNotificationPhone(phone: string): Promise<void> {
+// Raw module override only, no fallback to the global contact — for
+// pre-filling the settings form, so a blank override shows as blank rather
+// than looking like it's already set to the global value.
+export async function getModuleNotificationOverride(module: NotifyModule): Promise<{ email: string | null; phone: string | null }> {
+  try {
+    const [emailRow, phoneRow] = await Promise.all([
+      prisma.siteSetting.findUnique({ where: { key: moduleKey(ADMIN_EMAIL_KEY, module) } }),
+      prisma.siteSetting.findUnique({ where: { key: moduleKey(ADMIN_PHONE_KEY, module) } }),
+    ]);
+    return { email: emailRow?.value?.trim() || null, phone: phoneRow?.value?.trim() || null };
+  } catch {
+    return { email: null, phone: null };
+  }
+}
+
+export async function saveAdminNotificationPhone(phone: string, module?: NotifyModule): Promise<void> {
+  const key = moduleKey(ADMIN_PHONE_KEY, module);
   await prisma.siteSetting.upsert({
-    where: { key: ADMIN_PHONE_KEY },
-    create: { key: ADMIN_PHONE_KEY, value: phone },
+    where: { key },
+    create: { key, value: phone },
     update: { value: phone },
   });
 }
@@ -83,11 +117,12 @@ export async function notifyAdmin(opts: {
   lines: { label: string; value: string }[];
   actionPath?: string;
   actionLabel?: string;
+  module?: NotifyModule;
 }): Promise<void> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
 
   try {
-    const to = await getAdminNotificationEmail();
+    const to = await getAdminNotificationEmail(opts.module);
     if (to) {
       const rows = opts.lines
         .map(
@@ -113,7 +148,7 @@ export async function notifyAdmin(opts: {
   }
 
   try {
-    const phone = await getAdminNotificationPhone();
+    const phone = await getAdminNotificationPhone(opts.module);
     if (phone) {
       const lines = opts.lines.map((l) => `${l.label}: ${l.value}`).join("\n");
       const link = opts.actionPath ? `\n${baseUrl}${opts.actionPath}` : "";
@@ -126,10 +161,13 @@ export async function notifyAdmin(opts: {
   }
 }
 
-// Fires a confirmation email to a user (e.g. buyer) when their request is
-// approved. Same silent-failure contract as notifyAdmin.
+// Fires a confirmation email (and, if a phone is given, WhatsApp) to a user —
+// order confirmed, deposit/withdrawal approved, any completed transaction.
+// Same silent-failure contract as notifyAdmin: never throws, never blocks
+// the action that triggered it.
 export async function notifyUser(opts: {
   to: string;
+  phone?: string | null;
   subject: string;
   heading: string;
   message: string;
@@ -151,5 +189,16 @@ export async function notifyUser(opts: {
     await sendEmail(opts.to, opts.subject, wrapEmail(opts.heading, body));
   } catch (err) {
     console.error("[notifyUser] failed to send notification email:", err);
+  }
+
+  if (opts.phone) {
+    try {
+      const lines = (opts.lines ?? []).map((l) => `${l.label}: ${l.value}`).join("\n");
+      const text = `✅ ${opts.heading}\n\n${opts.message}${lines ? `\n\n${lines}` : ""}`;
+      const res = await sendWhatsAppMessage({ to: opts.phone, text });
+      if (!res.success) console.error("[notifyUser] WhatsApp send failed:", res.error);
+    } catch (err) {
+      console.error("[notifyUser] failed to send WhatsApp notification:", err);
+    }
   }
 }
