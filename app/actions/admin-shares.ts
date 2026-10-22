@@ -45,7 +45,7 @@ export async function processPurchaseAction(
 
   const request = await prisma.sharePurchaseRequest.findUnique({
     where: { id: requestId, status: "PENDING" },
-    include: { project: true, buyer: { select: { email: true, fullName: true } } },
+    include: { project: true, buyer: { select: { email: true, fullName: true, phone: true } } },
   });
 
   if (!request) return { error: "Request not found or already processed." };
@@ -168,6 +168,7 @@ export async function processPurchaseAction(
 
     await notifyUser({
       to: request.buyer.email,
+      phone: request.buyer.phone,
       subject: `Your share purchase is confirmed — ${request.project.name}`,
       heading: "Purchase Approved",
       message: `Hi ${request.buyer.fullName}, your purchase of ${request.quantity} share${request.quantity > 1 ? "s" : ""} in ${request.project.name} has been approved and added to your account.`,
@@ -190,6 +191,14 @@ export async function processPurchaseAction(
         message: `Your purchase request for ${request.project.name} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
         type: "PURCHASE",
       },
+    });
+
+    await notifyUser({
+      to: request.buyer.email,
+      phone: request.buyer.phone,
+      subject: `Share purchase rejected — ${request.project.name}`,
+      heading: "Purchase Rejected",
+      message: `Your purchase request for ${request.project.name} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
     });
   }
 
@@ -393,6 +402,7 @@ export async function processResellAction({
   if (type === "buyRequest" && buyRequestId) {
     const existingReq = await prisma.shareBuyRequest.findUnique({
       where: { id: buyRequestId },
+      include: { buyer: { select: { email: true, phone: true } } },
     });
     if (!existingReq) return { error: "Buy request not found." };
 
@@ -487,6 +497,14 @@ export async function processResellAction({
           module: "SHARE_BUY_REQUEST",
         });
       });
+
+      await notifyUser({
+        to: existingReq.buyer.email,
+        phone: existingReq.buyer.phone,
+        subject: `Buy request confirmed — Share #${existingReq.shareNumber}`,
+        heading: "Buy Request Confirmed & Paid",
+        message: `Your request to buy share #${existingReq.shareNumber} has been approved. ৳${priceBdt.toFixed(2)} was paid from your platform wallet.`,
+      });
     } else {
       await prisma.shareBuyRequest.update({
         where: { id: buyRequestId },
@@ -500,6 +518,14 @@ export async function processResellAction({
           message: `Your request to buy share #${existingReq.shareNumber} was not approved.`,
           type: "PURCHASE",
         },
+      });
+
+      await notifyUser({
+        to: existingReq.buyer.email,
+        phone: existingReq.buyer.phone,
+        subject: `Buy request not approved — Share #${existingReq.shareNumber}`,
+        heading: "Buy Request Not Approved",
+        message: `Your request to buy share #${existingReq.shareNumber} was not approved.${adminNote ? ` Reason: ${adminNote}` : ""}`,
       });
     }
 
@@ -518,20 +544,30 @@ export async function processResellAction({
 
     const listing = await prisma.shareListing.findUnique({
       where: { id: listingId },
-      include: { project: { select: { name: true } } },
+      include: { project: { select: { name: true } }, seller: { select: { email: true, phone: true } } },
     });
 
     if (listing) {
+      const message =
+        status === "APPROVED"
+          ? `Your listing for ${listing.quantity} shares in ${listing.project.name} is now live on the secondary market.`
+          : `Your resell listing for ${listing.project.name} was not approved.`;
+
       await prisma.notification.create({
         data: {
           userId: listing.sellerId,
           title: status === "APPROVED" ? "Resell listing approved" : "Resell listing rejected",
-          message:
-            status === "APPROVED"
-              ? `Your listing for ${listing.quantity} shares in ${listing.project.name} is now live on the secondary market.`
-              : `Your resell listing for ${listing.project.name} was not approved.`,
+          message,
           type: "TRADE",
         },
+      });
+
+      await notifyUser({
+        to: listing.seller.email,
+        phone: listing.seller.phone,
+        subject: status === "APPROVED" ? "Resell listing approved" : "Resell listing rejected",
+        heading: status === "APPROVED" ? "Resell Listing Approved" : "Resell Listing Rejected",
+        message,
       });
     }
   }
@@ -543,8 +579,10 @@ export async function processResellAction({
         listing: {
           include: {
             project: { select: { name: true } },
+            seller: { select: { email: true, phone: true } },
           },
         },
+        buyer: { select: { email: true, phone: true } },
       },
     });
 
@@ -732,6 +770,23 @@ export async function processResellAction({
         const msg = err instanceof Error ? err.message : "Transaction failed.";
         return { error: msg };
       }
+
+      await notifyUser({
+        to: trade.buyer.email,
+        phone: trade.buyer.phone,
+        subject: `Share trade approved — ${trade.listing.project.name}`,
+        heading: "Trade Approved",
+        message: `You successfully bought ${trade.quantity} shares in ${trade.listing.project.name} from the secondary market.`,
+        lines: [{ label: "Total Paid", value: `৳${Number(trade.totalAmount).toFixed(2)}` }],
+      });
+
+      await notifyUser({
+        to: trade.listing.seller.email,
+        phone: trade.listing.seller.phone,
+        subject: `Your shares have been sold — ${trade.listing.project.name}`,
+        heading: "Shares Sold",
+        message: `${trade.quantity} shares in ${trade.listing.project.name} were sold for ৳${Number(trade.totalAmount).toFixed(2)}. Your wallet has been credited.`,
+      });
     } else {
       await prisma.shareTrade.update({
         where: { id: tradeId },
@@ -745,6 +800,14 @@ export async function processResellAction({
           message: `Your request to buy shares in ${trade.listing.project.name} was not approved.`,
           type: "TRADE",
         },
+      });
+
+      await notifyUser({
+        to: trade.buyer.email,
+        phone: trade.buyer.phone,
+        subject: `Trade request rejected — ${trade.listing.project.name}`,
+        heading: "Trade Rejected",
+        message: `Your request to buy shares in ${trade.listing.project.name} was not approved.`,
       });
     }
   }

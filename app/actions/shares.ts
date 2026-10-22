@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getReferredByAgentId } from "@/lib/commission";
-import { getShareSgdRate, getShare4Amounts } from "@/lib/share-pricing";
+import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates, isShare4DateClosed } from "@/lib/share-pricing";
 import { effectiveShareCertPrice } from "@/lib/share-pricing-utils";
 import { notifyAdmin } from "@/lib/notifications";
 import { getLockedShareNumbers, getListingRemainingCount } from "@/lib/share-listings";
@@ -316,6 +316,11 @@ export async function createShareBuyRequestAction(
   const allowedAmounts = await getShare4Amounts();
   if (!allowedAmounts.includes(offeredBdt)) {
     return { error: `Choose one of the available amounts: ${allowedAmounts.map((a) => `৳${a.toLocaleString()}`).join(", ")}.` };
+  }
+
+  const closedDatesConfig = await getShare4ClosedDates();
+  if (isShare4DateClosed(preferredDate, closedDatesConfig)) {
+    return { error: "That date is closed for buy requests. Please choose a different date." };
   }
 
   const wallet = await prisma.wallet.findUnique({

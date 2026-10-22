@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getReferredByAgentId } from "@/lib/commission";
-import { notifyAdmin } from "@/lib/notifications";
+import { notifyAdmin, notifyUser } from "@/lib/notifications";
 
 type State = { error?: string; success?: boolean } | null;
 
@@ -76,10 +76,27 @@ export async function updateServiceRequestStatusAction(
   if (!session) redirect("/login");
   if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role)) redirect("/dashboard");
 
-  await prisma.serviceRequest.update({
+  const request = await prisma.serviceRequest.update({
     where: { id },
     data: { status, adminNote: adminNote || null },
+    include: { service: { select: { name: true } } },
   });
+
+  const STATUS_MESSAGES: Partial<Record<typeof status, string>> = {
+    IN_PROGRESS: `Your application for ${request.service.name} is now in progress.`,
+    COMPLETED: `Your application for ${request.service.name} has been completed.${adminNote ? ` Note: ${adminNote}` : ""}`,
+    REJECTED: `Your application for ${request.service.name} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
+  };
+
+  if (STATUS_MESSAGES[status]) {
+    await notifyUser({
+      to: request.email,
+      phone: request.phone,
+      subject: `Application update — ${request.service.name}`,
+      heading: "Application Update",
+      message: STATUS_MESSAGES[status]!,
+    });
+  }
 
   revalidatePath("/admin/apply");
 }

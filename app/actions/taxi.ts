@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getReferredByAgentId } from "@/lib/commission";
-import { notifyAdmin } from "@/lib/notifications";
+import { notifyAdmin, notifyUser } from "@/lib/notifications";
 
 type ActionState = { error?: string; success?: boolean; message?: string } | null;
 type TaxiStatus = "PENDING" | "ASSIGNED" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
@@ -164,7 +164,10 @@ export async function updateTaxiStatusAction(
 ): Promise<{ error?: string; success?: boolean }> {
   await requireAdmin();
 
-  const existing = await prisma.taxiRequest.findUnique({ where: { id } });
+  const existing = await prisma.taxiRequest.findUnique({
+    where: { id },
+    include: { user: { select: { email: true, phone: true } } },
+  });
   if (!existing) return { error: "Request not found." };
 
   const effectiveFare = farePrice !== undefined ? farePrice : (existing.price ? Number(existing.price) : 0);
@@ -220,6 +223,14 @@ export async function updateTaxiStatusAction(
         message: STATUS_MESSAGES[status]!,
         type: "SYSTEM",
       },
+    });
+
+    await notifyUser({
+      to: existing.user.email,
+      phone: existing.user.phone,
+      subject: "Taxi request update",
+      heading: "Taxi Request Update",
+      message: STATUS_MESSAGES[status]!,
     });
   }
 

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { creditWallet, debitWallet } from "@/lib/wallet";
-import { notifyAdmin } from "@/lib/notifications";
+import { notifyAdmin, notifyUser } from "@/lib/notifications";
 import { resolvePickPutRate, todayDate } from "@/lib/pick-put";
 import { DIRECTION_LABELS, bookingTotal, formatTravelDate, roundKg } from "@/lib/pick-put-utils";
 
@@ -63,14 +63,26 @@ async function refundBooking(
     description: `Pick & Put refund — ${reason}`,
     referenceId: booking.id,
   });
+  const message = `Your ${Number(booking.weightKg)} kg booking was ${status.toLowerCase()} (${reason}). ৳${Number(booking.totalAmount).toFixed(2)} has been refunded to your wallet.`;
   await tx.notification.create({
     data: {
       userId: booking.customerId,
       title: `Pick & Put booking ${status.toLowerCase()}`,
-      message: `Your ${Number(booking.weightKg)} kg booking was ${status.toLowerCase()} (${reason}). ৳${Number(booking.totalAmount).toFixed(2)} has been refunded to your wallet.`,
+      message,
       type: "WALLET",
     },
   });
+
+  const customer = await tx.user.findUnique({ where: { id: booking.customerId }, select: { email: true, phone: true } });
+  if (customer) {
+    await notifyUser({
+      to: customer.email,
+      phone: customer.phone,
+      subject: `Pick & Put booking ${status.toLowerCase()}`,
+      heading: status === "REJECTED" ? "Booking Rejected" : "Booking Cancelled",
+      message,
+    });
+  }
 }
 
 async function run(fn: () => Promise<void>): Promise<Result> {
@@ -276,7 +288,7 @@ async function loadBookingForTraveler(bookingId: string) {
   const session = await requireUser();
   const booking = await prisma.pickPutBooking.findUnique({
     where: { id: bookingId },
-    include: { trip: { select: { travelerId: true } } },
+    include: { trip: { select: { travelerId: true } }, customer: { select: { email: true, phone: true } } },
   });
   if (!booking) return { error: "Booking not found." } as const;
   const isAdmin = ADMIN_ROLES.includes(session.role);
@@ -294,13 +306,21 @@ export async function acceptBookingAction(bookingId: string): Promise<Result> {
       data: { status: "ACCEPTED" },
     });
     if (count === 0) throw new Error("Booking is no longer pending.");
+    const message = `Your ${Number(loaded.booking.weightKg)} kg booking was accepted. You can now contact the traveler from My Pick & Put to hand over the items.`;
     await prisma.notification.create({
       data: {
         userId: loaded.booking.customerId,
         title: "Pick & Put booking accepted",
-        message: `Your ${Number(loaded.booking.weightKg)} kg booking was accepted. You can now contact the traveler from My Pick & Put to hand over the items.`,
+        message,
         type: "SYSTEM",
       },
+    });
+    await notifyUser({
+      to: loaded.booking.customer.email,
+      phone: loaded.booking.customer.phone,
+      subject: "Pick & Put booking accepted",
+      heading: "Booking Accepted",
+      message,
     });
   });
 }
@@ -330,14 +350,23 @@ export async function approveTripAction(tripId: string, ratePerKg: number, note?
     const trip = await prisma.pickPutTrip.update({
       where: { id: tripId, status: "PENDING" },
       data: { status: "OPEN", ratePerKg: Math.round(ratePerKg * 100) / 100, adminNote: note?.trim() || null },
+      include: { traveler: { select: { email: true, phone: true } } },
     });
+    const message = `Your ${formatTravelDate(trip.travelDate)} trip is now listed at ৳${Number(trip.ratePerKg).toFixed(2)}/kg. You'll be notified when someone books space.`;
     await prisma.notification.create({
       data: {
         userId: trip.travelerId,
         title: "Your Pick & Put trip is live",
-        message: `Your ${formatTravelDate(trip.travelDate)} trip is now listed at ৳${Number(trip.ratePerKg).toFixed(2)}/kg. You'll be notified when someone books space.`,
+        message,
         type: "SYSTEM",
       },
+    });
+    await notifyUser({
+      to: trip.traveler.email,
+      phone: trip.traveler.phone,
+      subject: "Your Pick & Put trip is live",
+      heading: "Trip Approved",
+      message,
     });
   });
 }
@@ -348,14 +377,23 @@ export async function rejectTripAction(tripId: string, note?: string): Promise<R
     const trip = await prisma.pickPutTrip.update({
       where: { id: tripId, status: "PENDING" },
       data: { status: "REJECTED", adminNote: note?.trim() || null },
+      include: { traveler: { select: { email: true, phone: true } } },
     });
+    const message = `Your ${formatTravelDate(trip.travelDate)} trip was not approved.${note?.trim() ? ` Reason: ${note.trim()}` : ""}`;
     await prisma.notification.create({
       data: {
         userId: trip.travelerId,
         title: "Pick & Put trip not approved",
-        message: `Your ${formatTravelDate(trip.travelDate)} trip was not approved.${note?.trim() ? ` Reason: ${note.trim()}` : ""}`,
+        message,
         type: "SYSTEM",
       },
+    });
+    await notifyUser({
+      to: trip.traveler.email,
+      phone: trip.traveler.phone,
+      subject: "Pick & Put trip not approved",
+      heading: "Trip Not Approved",
+      message,
     });
   });
 }
@@ -373,7 +411,10 @@ export async function markDeliveredAction(bookingId: string): Promise<Result> {
 
       const booking = await tx.pickPutBooking.findUniqueOrThrow({
         where: { id: bookingId },
-        include: { trip: { select: { travelerId: true, travelDate: true } } },
+        include: {
+          trip: { select: { travelerId: true, travelDate: true, traveler: { select: { email: true, phone: true } } } },
+          customer: { select: { email: true, phone: true } },
+        },
       });
       await creditWallet(tx, {
         userId: booking.trip.travelerId,
@@ -382,21 +423,37 @@ export async function markDeliveredAction(bookingId: string): Promise<Result> {
         description: `Pick & Put delivery — ${Number(booking.weightKg)} kg (${formatTravelDate(booking.trip.travelDate)})`,
         referenceId: booking.id,
       });
+      const travelerMessage = `৳${Number(booking.totalAmount).toFixed(2)} for delivering ${Number(booking.weightKg)} kg has been added to your wallet.`;
+      const customerMessage = `Your ${Number(booking.weightKg)} kg shipment has been marked as delivered.`;
       await tx.notification.createMany({
         data: [
           {
             userId: booking.trip.travelerId,
             title: "Pick & Put payment received",
-            message: `৳${Number(booking.totalAmount).toFixed(2)} for delivering ${Number(booking.weightKg)} kg has been added to your wallet.`,
+            message: travelerMessage,
             type: "WALLET",
           },
           {
             userId: booking.customerId,
             title: "Pick & Put delivered",
-            message: `Your ${Number(booking.weightKg)} kg shipment has been marked as delivered.`,
+            message: customerMessage,
             type: "SYSTEM",
           },
         ],
+      });
+      await notifyUser({
+        to: booking.trip.traveler.email,
+        phone: booking.trip.traveler.phone,
+        subject: "Pick & Put payment received",
+        heading: "Payment Received",
+        message: travelerMessage,
+      });
+      await notifyUser({
+        to: booking.customer.email,
+        phone: booking.customer.phone,
+        subject: "Pick & Put delivered",
+        heading: "Shipment Delivered",
+        message: customerMessage,
       });
     })
   );

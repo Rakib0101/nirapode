@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { notifyUser } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -29,6 +30,7 @@ export async function processWithdrawalAction(
 
   const request = await prisma.withdrawalRequest.findUnique({
     where: { id: requestId, status: "PENDING" },
+    include: { user: { select: { email: true, phone: true } } },
   });
 
   if (!request) return { error: "Request not found or already processed." };
@@ -77,6 +79,14 @@ export async function processWithdrawalAction(
           },
         });
       });
+
+      await notifyUser({
+        to: request.user.email,
+        phone: request.user.phone,
+        subject: "Withdrawal approved & sent",
+        heading: "Withdrawal Approved",
+        message: `৳${Number(request.amount).toFixed(2)} has been sent to your ${request.paymentMethod} account (${request.accountNumber}).${adminTxId ? ` Transaction ID: ${adminTxId}.` : ""}`,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Transaction failed.";
       return { error: msg };
@@ -94,6 +104,14 @@ export async function processWithdrawalAction(
         message: `Your withdrawal request of ৳${Number(request.amount).toFixed(2)} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
         type: "WALLET",
       },
+    });
+
+    await notifyUser({
+      to: request.user.email,
+      phone: request.user.phone,
+      subject: "Withdrawal rejected",
+      heading: "Withdrawal Rejected",
+      message: `Your withdrawal request of ৳${Number(request.amount).toFixed(2)} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
     });
   }
 

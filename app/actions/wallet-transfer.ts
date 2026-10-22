@@ -8,6 +8,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { creditWallet, debitWallet, getTransferFeeSetting } from "@/lib/wallet";
 import { computeTransferFee } from "@/lib/wallet-tx";
+import { notifyUser } from "@/lib/notifications";
 
 type ActionState = { error?: string; success?: boolean; message?: string } | null;
 
@@ -19,7 +20,7 @@ const transferSchema = z.object({
 });
 
 async function findRecipient(identifier: string) {
-  const select = { id: true, fullName: true, email: true, isActive: true } as const;
+  const select = { id: true, fullName: true, email: true, phone: true, isActive: true } as const;
   if (identifier.includes("@")) {
     return prisma.user.findFirst({ where: { email: { equals: identifier, mode: "insensitive" } }, select });
   }
@@ -45,7 +46,7 @@ export async function sendMoneyAction(_prev: ActionState, formData: FormData): P
 
   const sender = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { passwordHash: true, pinHash: true },
+    select: { passwordHash: true, pinHash: true, email: true, phone: true },
   });
   if (!sender?.passwordHash && !sender?.pinHash) {
     return { error: "Set a password or PIN on your account before sending money." };
@@ -127,6 +128,22 @@ export async function sendMoneyAction(_prev: ActionState, formData: FormData): P
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : "Transfer failed. Please try again." };
   }
+
+  await notifyUser({
+    to: recipient.email,
+    phone: recipient.phone,
+    subject: "Money received",
+    heading: "Money Received",
+    message: `${session.fullName} sent you ৳${amount.toFixed(2)}.${note ? ` Note: ${note}` : ""}`,
+  });
+
+  await notifyUser({
+    to: sender.email,
+    phone: sender.phone,
+    subject: "Money sent",
+    heading: "Money Sent",
+    message: `You sent ৳${amount.toFixed(2)} to ${recipient.fullName}${fee > 0 ? ` (fee ৳${fee.toFixed(2)})` : ""}.`,
+  });
 
   revalidatePath("/wallet");
   revalidatePath("/dashboard");

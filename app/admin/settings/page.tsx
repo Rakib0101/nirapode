@@ -1,6 +1,6 @@
 import { getCurrencySettings, getLiveBdtRate } from "@/lib/currency";
 import { getAllCommissionSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
-import { getShareSgdRate, getShare4Amounts } from "@/lib/share-pricing";
+import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates } from "@/lib/share-pricing";
 import { getAdminNotificationEmail, getAdminNotificationPhone, getModuleNotificationOverride } from "@/lib/notifications";
 import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings } from "@/app/actions/admin-settings";
 import { getSiteContactSettings } from "@/lib/site-contact";
@@ -11,6 +11,7 @@ import { CommissionSettingsForm } from "./commission-form";
 import { SharePricingForm } from "./share-pricing-form";
 import { ShareAdminCutForm } from "./share-admin-cut-form";
 import { Share4AmountsForm } from "./share4-amounts-form";
+import { Share4ClosedDatesForm } from "./share4-closed-dates-form";
 import { NotificationEmailForm } from "./notification-email-form";
 import { ModuleNotificationForm } from "./module-notification-form";
 import { PaymentAccountsForm } from "./payment-accounts-form";
@@ -43,7 +44,7 @@ async function getPaymentAccounts() {
 }
 
 export default async function AdminSettingsPage() {
-  const [settings, liveRate, banks, paymentAccounts, commissionSettings, shareRate, shareAdminCutPercent, share4AdminCutPercent, share4Amounts, notificationEmail, notificationPhone, adSenseSettings, reminderSlotPrice, smtpSettings, whatsAppSettings, contactSettings, transferFee, reminderCronKey, requestHeaders] = await Promise.all([
+  const [settings, liveRate, banks, paymentAccounts, commissionSettings, shareRate, shareAdminCutPercent, share4AdminCutPercent, share4Amounts, share4ClosedDates, notificationEmail, notificationPhone, adSenseSettings, reminderSlotPrice, smtpSettings, whatsAppSettings, contactSettings, transferFee, reminderCronKey, requestHeaders] = await Promise.all([
     getCurrencySettings(),
     getLiveBdtRate(),
     getBankRates(),
@@ -53,6 +54,7 @@ export default async function AdminSettingsPage() {
     getShareAdminCutPercent(),
     getShare4AdminCutPercent(),
     getShare4Amounts(),
+    getShare4ClosedDates(),
     getAdminNotificationEmail(),
     getAdminNotificationPhone(),
     getAdSenseSettings(),
@@ -276,6 +278,28 @@ export default async function AdminSettingsPage() {
         </div>
         <div className="p-6">
           <Share4AmountsForm amounts={share4Amounts} />
+        </div>
+      </div>
+
+      {/* Share 4 closed dates */}
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">Share 4 — Closed Dates</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Block the Share 4 preferred-date picker on weekends and/or specific public holidays
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <Share4ClosedDatesForm closedWeekdays={share4ClosedDates.closedWeekdays} closedDates={share4ClosedDates.closedDates} />
         </div>
       </div>
 

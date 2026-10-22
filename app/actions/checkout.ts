@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { creditCommission } from "@/lib/commission";
-import { notifyAdmin } from "@/lib/notifications";
+import { notifyAdmin, notifyUser } from "@/lib/notifications";
 
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -338,6 +338,7 @@ async function settleCheckoutPaid(tx: TxClient, checkoutId: string, processedByI
     where: { id: checkoutId },
     data: { status: "PAID", processedById, processedAt: new Date() },
     include: {
+      user: { select: { email: true, phone: true } },
       items: {
         include: {
           taxiRequest: { select: { referredById: true } },
@@ -392,7 +393,15 @@ async function settleCheckoutPaid(tx: TxClient, checkoutId: string, processedByI
 export async function approveCheckoutAction(id: string) {
   const session = await requireAdmin();
 
-  await prisma.$transaction((tx) => settleCheckoutPaid(tx, id, session.userId));
+  const checkout = await prisma.$transaction((tx) => settleCheckoutPaid(tx, id, session.userId));
+
+  await notifyUser({
+    to: checkout.user.email,
+    phone: checkout.user.phone,
+    subject: "Payment received — booking confirmed",
+    heading: "Payment Received",
+    message: `Your payment of ৳${Number(checkout.totalAmount).toFixed(2)} has been confirmed. Your booking(s) are now confirmed.`,
+  });
 
   revalidatePath("/admin/checkouts");
   revalidatePath(`/admin/checkouts/${id}`);
@@ -417,6 +426,7 @@ export async function payCheckoutWithWalletAction(token: string): Promise<Wallet
   }
 
   const amount = Number(checkout.totalAmount);
+  let settledCheckout: Awaited<ReturnType<typeof settleCheckoutPaid>> | null = null;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -443,10 +453,21 @@ export async function payCheckoutWithWalletAction(token: string): Promise<Wallet
         where: { id: checkout.id },
         data: { paymentMethod: "WALLET", txId: null, screenshotUrl: null, adminNote: null },
       });
-      await settleCheckoutPaid(tx, checkout.id, null);
+      settledCheckout = await settleCheckoutPaid(tx, checkout.id, null);
     });
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Payment failed." };
+  }
+
+  if (settledCheckout) {
+    const settled: Awaited<ReturnType<typeof settleCheckoutPaid>> = settledCheckout;
+    await notifyUser({
+      to: settled.user.email,
+      phone: settled.user.phone,
+      subject: "Payment received — booking confirmed",
+      heading: "Payment Received",
+      message: `Your payment of ৳${Number(settled.totalAmount).toFixed(2)} has been confirmed. Your booking(s) are now confirmed.`,
+    });
   }
 
   revalidatePath(`/pay/${token}`);
@@ -459,6 +480,7 @@ export async function rejectCheckoutAction(id: string, note: string) {
   const checkout = await prisma.checkout.update({
     where: { id },
     data: { status: "REJECTED", adminNote: note || null },
+    include: { user: { select: { email: true, phone: true } } },
   });
 
   await prisma.notification.create({
@@ -468,6 +490,14 @@ export async function rejectCheckoutAction(id: string, note: string) {
       message: `We couldn't verify your payment.${note ? ` Reason: ${note}.` : ""} Please resubmit using the same link.`,
       type: "SYSTEM",
     },
+  });
+
+  await notifyUser({
+    to: checkout.user.email,
+    phone: checkout.user.phone,
+    subject: "Payment proof rejected",
+    heading: "Payment Proof Rejected",
+    message: `We couldn't verify your payment.${note ? ` Reason: ${note}.` : ""} Please resubmit using the same link.`,
   });
 
   revalidatePath("/admin/checkouts");

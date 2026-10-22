@@ -50,3 +50,54 @@ export async function saveShare4Amounts(amounts: number[]): Promise<void> {
     update: { value: JSON.stringify(cleaned) },
   });
 }
+
+// Share 4 preferred-date picker: admin can close specific weekdays (e.g. every
+// Sat/Sun) and/or specific one-off dates (public holidays). Empty by default —
+// every date is open until an admin closes some.
+const SHARE4_CLOSED_DATES_KEY = "share4_closed_dates";
+
+export type Share4ClosedDatesConfig = {
+  closedWeekdays: number[]; // 0 = Sunday … 6 = Saturday
+  closedDates: string[]; // "YYYY-MM-DD"
+};
+
+const EMPTY_CLOSED_DATES: Share4ClosedDatesConfig = { closedWeekdays: [], closedDates: [] };
+
+export async function getShare4ClosedDates(): Promise<Share4ClosedDatesConfig> {
+  try {
+    const row = await prisma.siteSetting.findUnique({ where: { key: SHARE4_CLOSED_DATES_KEY } });
+    if (!row) return EMPTY_CLOSED_DATES;
+    const parsed = JSON.parse(row.value);
+    const rawWeekdays: unknown[] = Array.isArray(parsed?.closedWeekdays) ? parsed.closedWeekdays : [];
+    const rawDates: unknown[] = Array.isArray(parsed?.closedDates) ? parsed.closedDates : [];
+    const closedWeekdays: number[] = Array.from(
+      new Set(rawWeekdays.map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))
+    );
+    const closedDates: string[] = Array.from(
+      new Set(rawDates.filter((d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)))
+    );
+    return { closedWeekdays, closedDates };
+  } catch {
+    return EMPTY_CLOSED_DATES;
+  }
+}
+
+export async function saveShare4ClosedDates(config: Share4ClosedDatesConfig): Promise<void> {
+  const cleaned: Share4ClosedDatesConfig = {
+    closedWeekdays: [...new Set(config.closedWeekdays.map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))],
+    closedDates: [...new Set(config.closedDates.filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)))].sort(),
+  };
+  await prisma.siteSetting.upsert({
+    where: { key: SHARE4_CLOSED_DATES_KEY },
+    create: { key: SHARE4_CLOSED_DATES_KEY, value: JSON.stringify(cleaned) },
+    update: { value: JSON.stringify(cleaned) },
+  });
+}
+
+// Shared check used both server-side (reject a closed date on submit) and to
+// hand the client the config it needs to grey out closed dates itself.
+export function isShare4DateClosed(date: Date, config: Share4ClosedDatesConfig): boolean {
+  const iso = date.toISOString().slice(0, 10);
+  if (config.closedDates.includes(iso)) return true;
+  return config.closedWeekdays.includes(date.getUTCDay());
+}

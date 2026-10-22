@@ -1,10 +1,15 @@
 import { getSession } from "@/lib/session";
-import { getShareSgdRate, getShare4Amounts } from "@/lib/share-pricing";
+import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates } from "@/lib/share-pricing";
 import { BuyRequestForm } from "./buy-request-form";
 import Link from "next/link";
 
 export default async function BuyRequestPage() {
-  const [session, rate, amounts] = await Promise.all([getSession(), getShareSgdRate(), getShare4Amounts()]);
+  const [session, rate, amounts, closedDates] = await Promise.all([
+    getSession(),
+    getShareSgdRate(),
+    getShare4Amounts(),
+    getShare4ClosedDates(),
+  ]);
 
   return (
     <div className="min-h-screen bg-muted">
@@ -26,7 +31,7 @@ export default async function BuyRequestPage() {
           </div>
 
           {session ? (
-            <BuyRequestForm defaultName={session.fullName} rate={rate} amounts={amounts} />
+            <BuyRequestForm defaultName={session.fullName} rate={rate} amounts={amounts} closedDates={closedDates} />
           ) : (
             <div className="p-10 text-center">
               <div className="text-5xl mb-4">📈</div>

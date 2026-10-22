@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { notifyUser } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -26,7 +27,7 @@ export async function processDepositAction(
 
   const request = await prisma.depositRequest.findUnique({
     where: { id: requestId, status: "PENDING" },
-    include: { user: { select: { wallet: true } } },
+    include: { user: { select: { email: true, phone: true, wallet: true } } },
   });
 
   if (!request) return { error: "Request not found or already processed." };
@@ -69,6 +70,18 @@ export async function processDepositAction(
           },
         });
       });
+
+      await notifyUser({
+        to: request.user.email,
+        phone: request.user.phone,
+        subject: "Deposit approved",
+        heading: "Deposit Approved",
+        message: `Your deposit of ৳${Number(request.amount).toFixed(2)} has been added to your wallet.`,
+        lines: [
+          { label: "Payment Method", value: request.paymentMethod },
+          { label: "Transaction ID", value: request.txId },
+        ],
+      });
     } else {
       await prisma.depositRequest.update({
         where: { id: requestId },
@@ -82,6 +95,14 @@ export async function processDepositAction(
           message: `Your deposit of ৳${Number(request.amount).toFixed(2)} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
           type: "WALLET",
         },
+      });
+
+      await notifyUser({
+        to: request.user.email,
+        phone: request.user.phone,
+        subject: "Deposit rejected",
+        heading: "Deposit Rejected",
+        message: `Your deposit of ৳${Number(request.amount).toFixed(2)} was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
       });
     }
 

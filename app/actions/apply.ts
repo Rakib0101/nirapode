@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { notifyAdmin } from "@/lib/notifications";
+import { notifyAdmin, notifyUser } from "@/lib/notifications";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
@@ -111,19 +111,29 @@ export async function updateApplicationStatusAction(
   if (status === "COMPLETED" || status === "REJECTED") {
     const app = await prisma.applyApplication.findUnique({
       where: { id },
-      select: { userId: true, service: { select: { name: true } } },
+      select: { userId: true, service: { select: { name: true } }, user: { select: { email: true, phone: true } } },
     });
     if (app) {
+      const message =
+        status === "COMPLETED"
+          ? `Your application for "${app.service.name}" has been completed. Please check your email or contact admin for next steps.`
+          : `Your application for "${app.service.name}" was not accepted. Reason: ${adminNote ?? "No reason provided."}`;
+
       await prisma.notification.create({
         data: {
           userId: app.userId,
           title: status === "COMPLETED" ? "Application Completed" : "Application Rejected",
-          message:
-            status === "COMPLETED"
-              ? `Your application for "${app.service.name}" has been completed. Please check your email or contact admin for next steps.`
-              : `Your application for "${app.service.name}" was not accepted. Reason: ${adminNote ?? "No reason provided."}`,
+          message,
           type: "SYSTEM",
         },
+      });
+
+      await notifyUser({
+        to: app.user.email,
+        phone: app.user.phone,
+        subject: status === "COMPLETED" ? "Application completed" : "Application rejected",
+        heading: status === "COMPLETED" ? "Application Completed" : "Application Rejected",
+        message,
       });
     }
   }

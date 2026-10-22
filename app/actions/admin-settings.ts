@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { COMMISSION_MODULES, saveCommissionSetting, saveShareAdminCutPercent, saveShare4AdminCutPercent, type CommissionMode } from "@/lib/commission";
-import { saveShareSgdRate, saveShare4Amounts } from "@/lib/share-pricing";
+import { saveShareSgdRate, saveShare4Amounts, saveShare4ClosedDates } from "@/lib/share-pricing";
 import { saveAdminNotificationEmail, saveAdminNotificationPhone, type NotifyModule } from "@/lib/notifications";
 import { saveTransferFeeSetting } from "@/lib/wallet";
 
@@ -266,6 +266,32 @@ export async function saveShare4AmountsAction(_prev: State, formData: FormData):
   }
 
   await saveShare4Amounts(amounts);
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/shares/buy-request");
+  return { success: true };
+}
+
+// ── Share 4 (buy-request) closed dates — block Sat/Sun/public holidays ───────
+
+export async function saveShare4ClosedDatesAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  const closedWeekdays = formData.getAll("closedWeekdays").map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+
+  let closedDates: string[];
+  try {
+    const parsed = JSON.parse((formData.get("closedDates") as string) || "[]");
+    if (!Array.isArray(parsed)) throw new Error();
+    closedDates = parsed.filter((d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d));
+  } catch {
+    return { error: "Invalid closed dates list." };
+  }
+
+  await saveShare4ClosedDates({ closedWeekdays, closedDates });
 
   revalidatePath("/admin/settings");
   revalidatePath("/shares/buy-request");

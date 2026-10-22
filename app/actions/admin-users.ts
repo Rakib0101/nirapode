@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { Role } from "../../generated/prisma/enums";
 import { Prisma } from "../../generated/prisma/client";
 import { generateReferralCode } from "@/lib/commission";
+import { notifyUser } from "@/lib/notifications";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -422,7 +423,7 @@ export async function adjustWalletAction(
 
   const { userId, direction, amount, reason } = parse.data;
 
-  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, fullName: true } });
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, fullName: true, email: true, phone: true } });
   if (!target) return { error: "User not found." };
   if (!canManage(session.role, target.role)) return { error: "You don't have permission to manage this user." };
 
@@ -456,6 +457,14 @@ export async function adjustWalletAction(
       },
     }),
   ]);
+
+  await notifyUser({
+    to: target.email,
+    phone: target.phone,
+    subject: direction === "CREDIT" ? "Wallet credited by admin" : "Wallet debited by admin",
+    heading: direction === "CREDIT" ? "Wallet Credited" : "Wallet Debited",
+    message: `Your wallet was ${direction === "CREDIT" ? "credited" : "debited"} ৳${amount.toFixed(2)} — ${reason}.`,
+  });
 
   revalidatePath("/admin/users");
   return { success: `${direction === "CREDIT" ? "Credited" : "Debited"} ৳${amount.toFixed(2)} ${direction === "CREDIT" ? "to" : "from"} ${target.fullName}'s wallet.` };

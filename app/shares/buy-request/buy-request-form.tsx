@@ -3,10 +3,34 @@
 import { useActionState, useState } from "react";
 import { createShareBuyRequestAction } from "@/app/actions/shares";
 
-export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: string; rate: number; amounts: number[] }) {
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+type ClosedDatesConfig = { closedWeekdays: number[]; closedDates: string[] };
+
+function isDateClosed(iso: string, config: ClosedDatesConfig): boolean {
+  if (!iso) return false;
+  if (config.closedDates.includes(iso)) return true;
+  const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay();
+  return config.closedWeekdays.includes(weekday);
+}
+
+export function BuyRequestForm({
+  defaultName,
+  rate,
+  amounts,
+  closedDates,
+}: {
+  defaultName: string;
+  rate: number;
+  amounts: number[];
+  closedDates: ClosedDatesConfig;
+}) {
   const [state, action, pending] = useActionState(createShareBuyRequestAction, null);
   const [price, setPrice] = useState(String(amounts[0] ?? 100));
   const [shareNumber, setShareNumber] = useState("");
+  const [preferredDate, setPreferredDate] = useState("");
+  const [dateError, setDateError] = useState("");
+  const hasClosedDates = closedDates.closedWeekdays.length > 0 || closedDates.closedDates.length > 0;
 
   if (state?.success) {
     return (
@@ -108,9 +132,28 @@ export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: st
         <input
           type="date"
           name="preferredDate"
+          value={preferredDate}
           required
+          onChange={(e) => {
+            const iso = e.target.value;
+            if (isDateClosed(iso, closedDates)) {
+              setPreferredDate("");
+              setDateError("That date is closed for buy requests. Please choose a different date.");
+              return;
+            }
+            setDateError("");
+            setPreferredDate(iso);
+          }}
           className="w-full px-3.5 py-2.5 rounded-xl border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm"
         />
+        {dateError && <p className="text-xs text-red-600 mt-1">{dateError}</p>}
+        {hasClosedDates && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {closedDates.closedWeekdays.length > 0 &&
+              `Closed every ${closedDates.closedWeekdays.map((d) => WEEKDAY_NAMES[d]).join(", ")}. `}
+            {closedDates.closedDates.length > 0 && "Some holiday dates are also closed."}
+          </p>
+        )}
       </div>
 
       {state?.error && (
@@ -121,7 +164,7 @@ export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: st
 
       <button
         type="submit"
-        disabled={pending || shareNumber.length !== 4}
+        disabled={pending || shareNumber.length !== 4 || !preferredDate}
         className="w-full bg-brand text-white rounded-xl py-3 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-60"
       >
         {pending ? "Submitting…" : "Submit Buy Request"}
