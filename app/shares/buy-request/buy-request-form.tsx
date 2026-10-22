@@ -6,6 +6,7 @@ import { createShareBuyRequestAction } from "@/app/actions/shares";
 export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: string; rate: number; amounts: number[] }) {
   const [state, action, pending] = useActionState(createShareBuyRequestAction, null);
   const [price, setPrice] = useState(String(amounts[0] ?? 100));
+  const [shareNumber, setShareNumber] = useState("");
 
   if (state?.success) {
     return (
@@ -38,15 +39,25 @@ export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: st
 
       {/* Share number */}
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1.5">Share Number</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Share Number (4 digits)</label>
         <input
           type="text"
+          inputMode="numeric"
           name="shareNumber"
           placeholder="e.g. 0007"
-          maxLength={20}
+          maxLength={4}
+          value={shareNumber}
+          onChange={(e) => {
+            const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+            if (digits === "0000") return; // not a valid share number — reject the completion, keep typing
+            setShareNumber(digits);
+          }}
           required
           className="w-full px-3.5 py-2.5 rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm"
         />
+        {shareNumber.length > 0 && shareNumber.length < 4 && (
+          <p className="text-xs text-muted-foreground mt-1">Enter all 4 digits.</p>
+        )}
       </div>
 
       {/* Size */}
@@ -110,7 +121,7 @@ export function BuyRequestForm({ defaultName, rate, amounts }: { defaultName: st
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || shareNumber.length !== 4}
         className="w-full bg-brand text-white rounded-xl py-3 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-60"
       >
         {pending ? "Submitting…" : "Submit Buy Request"}

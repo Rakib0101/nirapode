@@ -271,6 +271,7 @@ const editProjectSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   sharePriceSgd: z.coerce.number().min(0.01),
+  totalShares: z.coerce.number().int().positive("Total shares must be a positive number"),
   status: z.enum(["ACTIVE", "INACTIVE", "COMPLETED"]),
 });
 
@@ -285,16 +286,28 @@ export async function updateProjectAction(
     name: formData.get("name"),
     description: formData.get("description"),
     sharePriceSgd: formData.get("sharePriceSgd"),
+    totalShares: formData.get("totalShares"),
     status: formData.get("status"),
   });
 
   if (!parse.success) return { error: parse.error.issues[0].message };
 
-  const { projectId, name, description, sharePriceSgd, status } = parse.data;
+  const { projectId, name, description, sharePriceSgd, totalShares, status } = parse.data;
   const imageUrl = formData.get("imageUrl") as string | null;
 
-  const existing = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+  const existing = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { totalShares: true, availableShares: true },
+  });
   if (!existing) return { error: "Project not found." };
+
+  // Shares already sold/owned can never be taken back by shrinking the total —
+  // only the unsold portion (availableShares) can grow or shrink.
+  const soldShares = existing.totalShares - existing.availableShares;
+  if (totalShares < soldShares) {
+    return { error: `Total shares can't go below ${soldShares} — that many are already sold/owned.` };
+  }
+  const newAvailableShares = totalShares - soldShares;
 
   await prisma.project.update({
     where: { id: projectId },
@@ -302,6 +315,8 @@ export async function updateProjectAction(
       name,
       description,
       sharePriceSgd,
+      totalShares,
+      availableShares: newAvailableShares,
       status,
       ...(imageUrl ? { imageUrl } : {}),
     },

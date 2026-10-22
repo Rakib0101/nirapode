@@ -124,6 +124,7 @@ export default async function AdminProjectDetailPage({
                 name: project.name,
                 description: project.description,
                 sharePriceSgd: Number(project.sharePriceSgd),
+                totalShares: project.totalShares,
                 status: project.status,
               }}
             />

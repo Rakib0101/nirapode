@@ -11,6 +11,7 @@ type Project = {
   name: string;
   description: string;
   sharePriceSgd: number;
+  totalShares: number;
   status: string;
 };
 
@@ -96,13 +97,18 @@ export function ProjectActions({ project }: { project: Project }) {
                   <input name="sharePriceSgd" type="number" required min={0.01} step={0.01} defaultValue={project.sharePriceSgd} className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-foreground mb-1">Status</label>
-                  <select name="status" required defaultValue={project.status} className={INPUT}>
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="COMPLETED">Completed</option>
-                  </select>
+                  <label className="block text-xs font-medium text-foreground mb-1">Total Shares</label>
+                  <input name="totalShares" type="number" required min={1} step={1} defaultValue={project.totalShares} className={INPUT} />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">Status</label>
+                <select name="status" required defaultValue={project.status} className={INPUT}>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                  <option value="COMPLETED">Completed</option>
+                </select>
               </div>
 
               {editState?.error && (

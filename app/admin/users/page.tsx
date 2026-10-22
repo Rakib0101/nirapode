@@ -56,7 +56,7 @@ export default async function AdminUsersPage() {
                 <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">NID</th>
                 <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3 hidden md:table-cell">Phone</th>
                 <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Role</th>
-                <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3 hidden sm:table-cell">Wallet</th>
+                <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Wallet</th>
                 <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Status</th>
                 <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3 hidden lg:table-cell">Joined</th>
                 <th className="text-center text-xs font-semibold text-muted-foreground px-4 py-3">Actions</th>
@@ -87,9 +87,9 @@ export default async function AdminUsersPage() {
                       {u.role.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 hidden sm:table-cell">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">
+                      <span className="font-semibold text-foreground whitespace-nowrap">
                         ৳{u.wallet ? Number(u.wallet.balance).toFixed(2) : "0.00"}
                       </span>
                       <DirectAdjustWalletButton user={{ id: u.id, fullName: u.fullName, email: u.email }} />

@@ -279,7 +279,10 @@ export async function requestShareTradeAction(
 // ── Submit a general buy request (not tied to a specific project) ────────────
 const buyRequestSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  shareNumber: z.string().min(1, "Share number is required"),
+  shareNumber: z
+    .string()
+    .regex(/^\d{4}$/, "Share number must be exactly 4 digits")
+    .refine((v) => v !== "0000", "0000 is not a valid share number"),
   size: z.enum(["SMALL", "BIG"]),
   price: z.coerce.number().positive("Enter a valid amount"),
   preferredDate: z.coerce.date({ message: "Enter a valid date" }),

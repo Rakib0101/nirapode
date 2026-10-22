@@ -19,9 +19,9 @@ export async function PartnerCompaniesSection() {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={c.name}
-                className="opacity-70 hover:opacity-100 transition-opacity"
+                className="opacity-90 hover:opacity-100 transition-opacity"
               >
-                <img src={c.logoUrl} alt={c.name} className="h-10 sm:h-12 w-auto object-contain grayscale hover:grayscale-0 transition-all" />
+                <img src={c.logoUrl} alt={c.name} className="h-10 sm:h-12 w-auto object-contain" />
               </a>
             ) : (
               <img
@@ -29,7 +29,7 @@ export async function PartnerCompaniesSection() {
                 src={c.logoUrl}
                 alt={c.name}
                 title={c.name}
-                className="h-10 sm:h-12 w-auto object-contain opacity-70 grayscale"
+                className="h-10 sm:h-12 w-auto object-contain opacity-90"
               />
             )
           )}

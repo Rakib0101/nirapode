@@ -45,12 +45,11 @@ export function DepositForm({ accounts, defaultAmount }: { accounts: PaymentAcco
     );
   }
 
-  // One radio option per method — if admin added multiple accounts under the
-  // same method, the display list below still shows all of them, but the
-  // radio only needs to capture which method the buyer paid via.
-  const methodOptions = accounts.filter(
-    (a, i) => accounts.findIndex((b) => b.method === a.method) === i
-  );
+  // One radio option per ACCOUNT, not per method — admin may add multiple
+  // accounts under the same method (e.g. bKash Personal + bKash Agent), and
+  // each needs its own visible, selectable option even though they submit
+  // the same PaymentMethod value.
+  const methodOptions = accounts;
 
   return (
     <form action={action} className="space-y-5">
@@ -114,7 +113,7 @@ export function DepositForm({ accounts, defaultAmount }: { accounts: PaymentAcco
         <label className="block text-sm font-medium text-foreground mb-2">Payment Method</label>
         <div className="grid grid-cols-2 gap-2">
           {methodOptions.map((m) => (
-            <label key={m.method} className="cursor-pointer">
+            <label key={m.id} className="cursor-pointer">
               <input type="radio" name="paymentMethod" value={m.method} className="sr-only peer" required />
               <div className="border border-border rounded-lg px-3 py-2 text-sm font-medium text-center transition-colors peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand hover:border-brand/40 text-muted-foreground">
                 {m.label}
