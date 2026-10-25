@@ -99,13 +99,13 @@ export default async function AdminSettingsPage() {
   ]);
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto pb-12">
       <SettingsTabs
         currencyContent={
-          <>
-            {/* Currency source control */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            {/* Currency source control & Pesos Withdrawal Rate (Full Width) */}
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,21 +113,21 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Rate Bar Source (SGD → BDT) & Pesos Rate</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Exchange Rates & Withdrawal Conversion</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Controls the SGD/BDT rate and Taka to Pesos withdrawal rate
+                      Configure SGD ➔ BDT live or manual source, and Taka to Pesos (PHP) rate for GCash payouts
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <CurrencySettingsForm settings={settings} liveRate={liveRate} />
               </div>
             </div>
 
             {/* Bank rates */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,21 +135,21 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Bank Rates</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Bank Rates Listing</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Add banks and their SGD → BDT rates — shown on currency page
+                      SGD ➔ BDT remittance rates displayed on the currency page
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <BankRatesForm banks={banks} />
               </div>
             </div>
 
             {/* Payment accounts (deposit receiving accounts) */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,21 +157,21 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Payment Accounts</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Deposit Payment Accounts</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      bKash, Nagad, GCash, Bank, PayNow etc. — shown on deposit page
+                      bKash, Nagad, GCash, Bank, PayNow etc. shown on customer deposit page
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <PaymentAccountsForm accounts={paymentAccounts} />
               </div>
             </div>
 
-            {/* User-to-user wallet transfer fee */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+            {/* User-to-user wallet transfer fee (Full Width or 2nd Row) */}
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,24 +179,24 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Wallet Transfer Fee</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Peer-to-Peer Wallet Transfer Fee</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Charge for members sending money to each other from wallets
+                      Charge members when sending funds to other members from their platform wallet
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <TransferFeeForm setting={transferFee} />
               </div>
             </div>
-          </>
+          </div>
         }
         sharesContent={
-          <>
-            {/* Share pricing rate */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            {/* Share pricing rate (Full Width) */}
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,21 +204,21 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Share Pricing (SGD → BDT)</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Share Pricing Rate (SGD → BDT)</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Rate converting nominal SGD share prices to actual BDT charged at purchase
+                      Admin-fixed conversion rate used when calculating BDT cost for shares denominated in SGD
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <SharePricingForm rate={shareRate} />
               </div>
             </div>
 
-            {/* Share purchase platform cut */}
+            {/* Share 6 platform cut */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,19 +228,19 @@ export default async function AdminSettingsPage() {
                   <div>
                     <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 6 — Platform Cut</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Platform percentage cut on Share 6 purchases for admin tracking
+                      Platform margin percentage on Share 6 purchases (informational admin tracking)
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <ShareAdminCutForm percent={shareAdminCutPercent} variant="share6" />
               </div>
             </div>
 
             {/* Share 4 (buy-request) platform cut */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,19 +250,19 @@ export default async function AdminSettingsPage() {
                   <div>
                     <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 4 — Platform Cut</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Platform percentage cut on Share 4 buy-requests for admin tracking
+                      Platform margin percentage on Share 4 buy-requests
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <ShareAdminCutForm percent={share4AdminCutPercent} variant="share4" />
               </div>
             </div>
 
             {/* Share 4 offer amounts */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,19 +272,19 @@ export default async function AdminSettingsPage() {
                   <div>
                     <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 4 — Offer Amounts</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      The exact BDT amounts buyers choose from on the Share 4 form
+                      Specific ৳ amounts buyers can select on the Share 4 buy-request form
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <Share4AmountsForm amounts={share4Amounts} />
               </div>
             </div>
 
             {/* Share 4 closed dates */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,24 +292,24 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 4 — Closed Dates</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 4 — Closed Dates & Calendar</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Block the Share 4 date picker on specific weekdays or holidays
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <Share4ClosedDatesForm closedWeekdays={share4ClosedDates.closedWeekdays} closedDates={share4ClosedDates.closedDates} />
               </div>
             </div>
-          </>
+          </div>
         }
         notificationsContent={
-          <>
-            {/* Admin notification email */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            {/* Admin notification email (Full Width) */}
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,28 +317,37 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Admin Notification Recipients</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Admin Alert Recipients (Order Notifications)</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Recipient email and phone numbers for new orders and requests
+                      Where new-order and withdrawal alert emails and WhatsApp messages are delivered
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <NotificationEmailForm email={notificationEmail} phone={notificationPhone} />
-                <div className="mt-6 pt-6 border-t border-border space-y-5">
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Optional overrides — route Share 4 and Share 6 order alerts to different people:
-                  </p>
-                  <ModuleNotificationForm module="SHARE4" label="Share 4" email={share4Notify.email} phone={share4Notify.phone} />
-                  <ModuleNotificationForm module="SHARE6" label="Share 6" email={share6Notify.email} phone={share6Notify.phone} />
+                <div className="mt-6 pt-6 border-t border-border space-y-4">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Per-Module Routing Overrides</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Route Share 4 and Share 6 order alerts to separate managers or phones. Leave blank to use the default contact above.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-muted/40 rounded-xl p-4 border border-border">
+                      <ModuleNotificationForm module="SHARE4" label="Share 4" email={share4Notify.email} phone={share4Notify.phone} />
+                    </div>
+                    <div className="bg-muted/40 rounded-xl p-4 border border-border">
+                      <ModuleNotificationForm module="SHARE6" label="Share 6" email={share6Notify.email} phone={share6Notify.phone} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* SMTP Email Configuration */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,19 +357,19 @@ export default async function AdminSettingsPage() {
                   <div>
                     <h2 className="font-semibold text-foreground text-sm sm:text-base">SMTP Email Server Settings</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Configure Gmail or custom SMTP to send OTPs, reminders, and notifications
+                      Gmail or custom SMTP server to send OTPs, reminders, and alerts
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <SmtpSettingsForm settings={smtpSettings} />
               </div>
             </div>
 
             {/* WhatsApp Automated API */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
                     <span className="text-lg">💬</span>
@@ -368,93 +377,110 @@ export default async function AdminSettingsPage() {
                   <div>
                     <h2 className="font-semibold text-foreground text-sm sm:text-base">Automated WhatsApp API Gateway</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Configure WhatsApp REST API (UltraMsg / GreenAPI / Meta Cloud API) for background messaging
+                      Connect UltraMsg, GreenAPI, or Meta Cloud API for background WhatsApp alerts
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <WhatsAppApiSettingsForm settings={whatsAppSettings} />
               </div>
             </div>
-          </>
+          </div>
         }
         alarmsContent={
-          <>
-            {/* Reminder Alarm Price & Cron */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            {/* Reminder Alarm Slot Price */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
                     <span className="text-lg">⏰</span>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Alarm & Reminder Settings</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Alarm & Reminder Slot Pricing</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Set unlock fee for reminder slots (Slots 2–10) and manage the automated cron trigger
+                      Set unlock fee in BDT for additional reminder slots (Slots 2–10)
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6 space-y-6">
+              <div className="p-5 sm:p-7">
                 <ReminderPriceForm currentPrice={reminderSlotPrice} />
-                <div className="pt-4 border-t border-border">
-                  <ReminderCronPanel cronUrl={reminderCronUrl} />
-                </div>
               </div>
             </div>
-          </>
+
+            {/* Automated Cron Trigger Panel */}
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+                    <span className="text-lg">⚡</span>
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Cron Job Scheduler & Test</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Recurring 1-minute cron URL and immediate trigger test tool
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 sm:p-7">
+                <ReminderCronPanel cronUrl={reminderCronUrl} />
+              </div>
+            </div>
+          </div>
         }
         commissionContent={
-          <>
+          <div className="w-full">
             {/* Agent commission rate */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6M2 7h20M12 3v4M8 7l4-4 4 4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Agent Commission Settings</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Agent Referral Commission Rules</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Set percentage or fixed ৳ amount agents earn per module on referred requests
+                      Configure percentage or flat ৳ earnings for referring agents across each service module
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <CommissionSettingsForm settings={commissionSettings} />
               </div>
             </div>
-          </>
+          </div>
         }
         siteContent={
-          <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             {/* Public Contact & Social Links */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                     <span className="text-lg">📞</span>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Site Contact & Support Info</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Public Contact & Support Channels</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Manage WhatsApp support number, support email, hotline, Facebook group, and office info
+                      Customer WhatsApp floating button, support email, hotline, Facebook community, and office address
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <SiteContactForm settings={contactSettings} />
               </div>
             </div>
 
             {/* Google AdSense */}
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -462,18 +488,18 @@ export default async function AdminSettingsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Google AdSense</h2>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Google AdSense Monetization</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Display advertisements to monetize platform traffic
+                      Publisher client ID and auto-ad script tags for website monetization
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-7">
                 <AdSenseSettingsForm settings={adSenseSettings} />
               </div>
             </div>
-          </>
+          </div>
         }
       />
     </div>
