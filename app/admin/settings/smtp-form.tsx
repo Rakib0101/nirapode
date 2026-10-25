@@ -85,7 +85,7 @@ export function SmtpSettingsForm({ settings }: { settings: SmtpSettings }) {
             name="from"
             type="text"
             defaultValue={settings.from}
-            placeholder="Singapore Probashi <your-email@gmail.com>"
+            placeholder="Nirapode <your-email@gmail.com>"
             className="w-full text-sm px-3.5 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
           />
         </div>

@@ -1,12 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted flex flex-col">
       <header className="py-5 px-6">
         <Link href="/" className="inline-block">
-          <Image src="/logo.png" alt="Singapur Probashi" width={160} height={50} className="h-10 w-auto" priority />
+          <Logo size="lg" />
         </Link>
       </header>
 
@@ -17,7 +17,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <footer className="py-4 text-center text-xs text-muted-foreground">
-        © 2025 Singapur Probashi Community Platform
+        © {new Date().getFullYear()} Nirapode Expatriate Platform
       </footer>
     </div>
   );

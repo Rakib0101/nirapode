@@ -175,7 +175,7 @@ export function CvBuilderClient({
     setNeedDeposit(false);
 
     if (!user) {
-      setDeductError("Please log in to your Singapur Probashi account before generating and downloading your CV.");
+      setDeductError("Please log in to your Nirapode account before generating and downloading your CV.");
       return;
     }
 
@@ -200,7 +200,7 @@ export function CvBuilderClient({
     }
   }
 
-  const waSummary = `Hi Singapore Probashi Support, here is my worker CV details:
+  const waSummary = `Hi Nirapode Support, here is my worker CV details:
 *Name:* ${fullName}
 *Phone:* ${phone}
 *Passport/FIN:* ${finPassport || "N/A"}
@@ -632,7 +632,7 @@ Please help me review and connect with prospective employers.`;
 
               {/* Footer Note */}
               <div className="pt-4 border-t border-border text-[10px] text-muted-foreground text-center">
-                Prepared via Singapore Probashi Expatriate Platform · Document Verification Available
+                Prepared via Nirapode Platform · Document Verification Available
               </div>
             </div>
           </div>

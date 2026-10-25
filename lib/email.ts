@@ -49,7 +49,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     },
   });
 
-  const fromAddress = config.from.includes("<") ? config.from : `Singapore Probashi <${config.from}>`;
+  const fromAddress = config.from.includes("<") ? config.from : `Nirapode <${config.from}>`;
   await transporter.sendMail({ from: fromAddress, to, subject, html });
 }
 
@@ -65,9 +65,9 @@ export async function sendOTPEmail(
   const isVerification = type === "verification";
   const isResetPin = type === "reset-pin";
   const subject = isVerification
-    ? "Verify your Singapore Probashi account"
+    ? "Verify your Nirapode account"
     : isResetPin
-      ? "Reset your Singapore Probashi PIN"
+      ? "Reset your Nirapode PIN"
       : "Reset your password";
 
   const html = `
@@ -83,16 +83,16 @@ export async function sendOTPEmail(
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <tr>
-                  <td style="background:#047857;padding:28px 32px;text-align:center;">
+                  <td style="background:#7c3aed;padding:28px 32px;text-align:center;">
                     <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">
-                      Singapore Probashi
+                      Nirapode
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:32px;">
                     <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#18181b;">
-                      ${isVerification ? "Welcome to Singapore Probashi!" : isResetPin ? "PIN Reset Request" : "Password Reset Request"}
+                      ${isVerification ? "Welcome to Nirapode!" : isResetPin ? "PIN Reset Request" : "Password Reset Request"}
                     </p>
                     <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.5;">
                       ${isVerification

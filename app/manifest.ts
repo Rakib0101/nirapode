@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Singapur Probashi – Bangladesh Community in Singapore",
-    short_name: "Singapur Probashi",
+    name: "Nirapode – Expatriate Platform",
+    short_name: "Nirapode",
     description:
-      "Complete community platform for Bangladeshi expatriates in Singapore. Share investments, air tickets, currency converter, Islamic center, and more.",
+      "Complete community platform for Bangladeshi expatriates. Share investments, air tickets, currency converter, wallet, Islamic center, and more.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

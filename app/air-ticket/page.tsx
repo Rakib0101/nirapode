@@ -11,7 +11,7 @@ export default async function AirTicketPage() {
 
   const whatsappHref = formatWhatsAppLink(
     contact.whatsappNumber,
-    "Hello Singapore Probashi Support, I need urgent assistance with an Air Ticket booking."
+    "Hello Nirapode Support, I need urgent assistance with an Air Ticket booking."
   );
 
   return (

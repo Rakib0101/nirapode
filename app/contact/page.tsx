@@ -47,7 +47,7 @@ export default async function ContactPage() {
         </svg>
       ),
       title: "Facebook Group",
-      value: "Singapore Probashi Community",
+      value: "Nirapode Community",
       sub: "Community discussions & updates",
       href: contact.facebookUrl || "https://facebook.com",
       label: "Join Group",

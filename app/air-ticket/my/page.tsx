@@ -92,7 +92,7 @@ export default async function MyAirTicketRequestsPage() {
                         href={`/api/tickets/${r.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        download={`singapur-probashi-ticket-${r.id}.pdf`}
+                        download={`nirapode-ticket-${r.id}.pdf`}
                         className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded-lg transition-colors shadow-2xs"
                       >
                         📥 Download E-Ticket

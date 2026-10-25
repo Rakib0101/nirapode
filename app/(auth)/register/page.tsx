@@ -58,7 +58,7 @@ export default function RegisterPage() {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
       <h1 className="text-2xl font-bold text-foreground mb-1">Create account</h1>
-      <p className="text-sm text-muted-foreground mb-6">Join the Singapur Probashi community</p>
+      <p className="text-sm text-muted-foreground mb-6">Join the Nirapode community</p>
 
       {/* Google sign-up */}
       <a

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Logo } from "@/components/logo";
 import { usePathname } from "next/navigation";
 
 const nav = [
@@ -147,11 +148,7 @@ export function AdminSidebar({ userName, userRole, userEmail, pendingCounts }: P
     <aside className="hidden lg:flex flex-col h-screen sticky top-0 bg-white border-r border-border w-60 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border">
-        <Image src="/logo.png" alt="Logo" width={32} height={32} />
-        <div className="leading-tight">
-          <p className="text-sm font-bold text-foreground">Singapur Probashi</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin Panel</p>
-        </div>
+        <Logo size="sm" />
       </div>
 
       {/* Nav */}

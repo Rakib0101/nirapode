@@ -11,7 +11,7 @@ export default async function TaxiPage() {
 
   const whatsappHref = formatWhatsAppLink(
     contact.whatsappNumber,
-    "Hello Singapore Probashi Support, I need urgent assistance with a Taxi booking."
+    "Hello Nirapode Support, I need urgent assistance with a Taxi booking."
   );
 
   return (

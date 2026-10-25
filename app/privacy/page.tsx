@@ -48,7 +48,7 @@ export default async function PrivacyPage() {
         <div className="bg-white rounded-2xl border border-border p-8 sm:p-10">
           <p className="text-xs text-muted-foreground mb-2">Last updated: 2026</p>
           <h1 className="text-3xl font-bold text-foreground mb-2">Privacy Policy</h1>
-          <p className="text-muted-foreground mb-8">Singapore Probashi Community Platform (&quot;we&quot;, &quot;our&quot;, &quot;the Platform&quot;) is committed to protecting the privacy of our members. This policy explains how we collect, use, and protect your personal data.</p>
+          <p className="text-muted-foreground mb-8">Nirapode Platform (&quot;we&quot;, &quot;our&quot;, &quot;the Platform&quot;) is committed to protecting the privacy of our members. This policy explains how we collect, use, and protect your personal data.</p>
 
           {sections.map((section) => (
             <div key={section.title} className="mb-7">

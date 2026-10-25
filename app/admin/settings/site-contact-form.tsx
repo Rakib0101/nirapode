@@ -40,7 +40,7 @@ export function SiteContactForm({ settings }: { settings: SiteContactSettings })
             type="email"
             required
             defaultValue={settings.supportEmail}
-            placeholder="support@singaporeprobashi.com"
+            placeholder="support@nirapode.com"
             className="w-full text-sm px-3.5 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
           />
           <p className="text-[11px] text-muted-foreground mt-1">
@@ -69,7 +69,7 @@ export function SiteContactForm({ settings }: { settings: SiteContactSettings })
             name="facebookUrl"
             type="url"
             defaultValue={settings.facebookUrl}
-            placeholder="https://facebook.com/groups/singaporeprobashi"
+            placeholder="https://facebook.com/groups/nirapode"
             className="w-full text-sm px-3.5 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
           />
         </div>
@@ -82,7 +82,7 @@ export function SiteContactForm({ settings }: { settings: SiteContactSettings })
             name="whatsappMessage"
             type="text"
             defaultValue={settings.whatsappMessage}
-            placeholder="Hello Singapore Probashi Support, I would like to inquire about..."
+            placeholder="Hello Nirapode Support, I would like to inquire about..."
             className="w-full text-sm px-3.5 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
           />
         </div>

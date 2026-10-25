@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { DEFAULT_CONTACT_SETTINGS, formatWhatsAppLink, type SiteContactSettings } from "@/lib/site-contact-types";
 
 export function Footer({ contact = DEFAULT_CONTACT_SETTINGS }: { contact?: SiteContactSettings }) {
@@ -38,16 +39,11 @@ export function Footer({ contact = DEFAULT_CONTACT_SETTINGS }: { contact?: SiteC
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand & Direct Contact */}
           <div className="lg:col-span-2 space-y-4">
-            <Image
-              src="/logo.png"
-              alt="Singapore Probashi"
-              width={160}
-              height={40}
-              className="h-8"
-              style={{ width: "auto" }}
-            />
+            <div className="mb-3">
+              <Logo size="md" />
+            </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-              Complete trusted community platform for Bangladeshi expatriates in Singapore. Shares, Flight Tickets, Currency, Islamic Center, and Community Support.
+              Complete trusted expatriate community platform. Shares, Flight Tickets, Currency, Islamic Center, and Community Support.
             </p>
 
             {/* Direct WhatsApp button */}
@@ -125,7 +121,7 @@ export function Footer({ contact = DEFAULT_CONTACT_SETTINGS }: { contact?: SiteC
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© 2026 Singapore Probashi Community. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Nirapode. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-brand transition-colors">
               Privacy Policy

@@ -55,7 +55,7 @@ function LoginForm() {
       </div>
 
       <h1 className="text-2xl font-bold text-foreground mb-1">Welcome back</h1>
-      <p className="text-sm text-muted-foreground mb-7">Sign in to your Singapur Probashi account</p>
+      <p className="text-sm text-muted-foreground mb-7">Sign in to your Nirapode account</p>
 
       {resetSuccess && (
         <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 mb-5">

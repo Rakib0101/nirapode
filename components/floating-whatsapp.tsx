@@ -11,7 +11,7 @@ type FloatingWhatsAppProps = {
 export function FloatingWhatsApp({ whatsappNumber, defaultMessage }: FloatingWhatsAppProps) {
   const [isOpen, setIsOpen] = useState(false);
   const number = whatsappNumber || "+6581234567";
-  const msg = defaultMessage || "Hello Singapore Probashi support team, I need some assistance.";
+  const msg = defaultMessage || "Hello Nirapode support team, I need some assistance.";
   const link = formatWhatsAppLink(number, msg);
 
   return (
@@ -24,7 +24,7 @@ export function FloatingWhatsApp({ whatsappNumber, defaultMessage }: FloatingWha
                 💬
               </div>
               <div>
-                <p className="text-sm font-bold text-foreground">Singapore Probashi</p>
+                <p className="text-sm font-bold text-foreground">Nirapode Support</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   <span className="text-[11px] text-muted-foreground">Official WhatsApp Support</span>

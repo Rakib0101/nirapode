@@ -10,8 +10,8 @@ export type SiteContactSettings = {
 
 export const DEFAULT_CONTACT_SETTINGS: SiteContactSettings = {
   whatsappNumber: "+6581234567",
-  whatsappMessage: "Hello Singapore Probashi Support, I would like to inquire about your services.",
-  supportEmail: "support@singaporeprobashi.com",
+  whatsappMessage: "Hello Nirapode Support, I would like to inquire about your services.",
+  supportEmail: "support@nirapode.com",
   supportPhone: "+65 8123 4567",
   facebookUrl: "https://facebook.com",
   officeAddress: "Mustafa Centre Area, Little India, Singapore",

@@ -52,12 +52,12 @@ export default async function ShareCertificatePage({
         {/* Background Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
           <span className="text-9xl font-black tracking-widest text-slate-900 rotate-[-25deg]">
-            PROBASHI
+            NIRAPODE
           </span>
         </div>
 
         {/* Decorative corner borders */}
-        <div className="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-amber-600" />
+        <div className="absolute top-3 left-3 w-8 h-8 border-t-2 border-amber-600" />
         <div className="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-amber-600" />
         <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-amber-600" />
         <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-amber-600" />
@@ -68,7 +68,7 @@ export default async function ShareCertificatePage({
             Official Share Certificate
           </div>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-slate-900 tracking-tight">
-            SINGAPORE PROBASHI
+            NIRAPODE
           </h1>
           <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">
             Community Investment & Development Network
@@ -106,7 +106,7 @@ export default async function ShareCertificatePage({
           </div>
 
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Entitled to all rights, privileges, and dividend benefits pertaining to said share under the regulations of Singapore Probashi.
+            Entitled to all rights, privileges, and dividend benefits pertaining to said share under the regulations of Nirapode.
           </p>
         </div>
 
@@ -136,14 +136,14 @@ export default async function ShareCertificatePage({
           <div className="space-y-1">
             <p className="text-xs font-serif font-bold italic text-slate-800">Authorized Officer</p>
             <div className="w-24 h-px bg-slate-300 mx-auto" />
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Singapore Probashi</p>
+            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Nirapode</p>
           </div>
         </div>
 
         {/* Verification Footer text */}
         <div className="mt-8 pt-4 border-t border-dashed border-slate-200 text-center">
           <p className="text-[10px] font-mono text-slate-400">
-            Certificate ID: {cert.id} · Verify authenticity at singaporeprobashi.com/shares/certificate/{cert.id}
+            Certificate ID: {cert.id} · Verify authenticity at nirapode.vercel.app/shares/certificate/{cert.id}
           </p>
         </div>
       </div>

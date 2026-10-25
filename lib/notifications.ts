@@ -84,8 +84,8 @@ function wrapEmail(heading: string, bodyHtml: string): string {
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <tr>
-                  <td style="background:#2563eb;padding:24px 32px;text-align:center;">
-                    <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Singapur Probashi</p>
+                  <td style="background:#7c3aed;padding:24px 32px;text-align:center;">
+                    <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Nirapode</p>
                     <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:1px;">${heading}</p>
                   </td>
                 </tr>
@@ -94,7 +94,7 @@ function wrapEmail(heading: string, bodyHtml: string): string {
                 </tr>
                 <tr>
                   <td style="background:#f9fafb;border-top:1px solid #f3f4f6;padding:16px 32px;text-align:center;">
-                    <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Singapur Probashi Community.</p>
+                    <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Nirapode Platform.</p>
                   </td>
                 </tr>
               </table>

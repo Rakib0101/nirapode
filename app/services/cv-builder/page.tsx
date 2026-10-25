@@ -5,8 +5,8 @@ import { CvBuilderClient } from "./cv-builder-client";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Worker CV Builder – Singapur Probashi",
-  description: "Create professional CV / Resume for Bangladeshi workers in Singapore with instant PDF download and WhatsApp sharing.",
+  title: "Worker CV Builder – Nirapode",
+  description: "Create professional CV / Resume for expatriate workers with instant PDF download and WhatsApp sharing.",
 };
 
 export default async function CvBuilderPage() {

@@ -34,17 +34,17 @@ export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waS
     try {
       await sendEmail(
         reminder.user.email,
-        `🔔 Singapore Probashi Reminder: Slot #${reminder.slotIndex}`,
+        `🔔 Nirapode Reminder: Slot #${reminder.slotIndex}`,
         `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <h2 style="color: #047857;">🔔 Singapore Probashi Alarm Reminder</h2>
+            <h2 style="color: #7c3aed;">🔔 Nirapode Alarm Reminder</h2>
             <p>Hello <strong>${reminder.user.fullName}</strong>,</p>
             <p>This is your scheduled alarm reminder:</p>
-            <div style="background: #f8fafc; padding: 16px; border-left: 4px solid #047857; margin: 16px 0; border-radius: 4px;">
+            <div style="background: #f8fafc; padding: 16px; border-left: 4px solid #7c3aed; margin: 16px 0; border-radius: 4px;">
               <p style="font-size: 16px; margin: 0; color: #1e293b;"><strong>${note}</strong></p>
               ${when ? `<p style="font-size: 12px; color: #64748b; margin-top: 8px;">Scheduled for: ${when}</p>` : ""}
             </div>
-            <p style="font-size: 12px; color: #94a3b8;">Singapore Probashi Community Services</p>
+            <p style="font-size: 12px; color: #94a3b8;">Nirapode Platform Services</p>
           </div>
         `
       );
@@ -55,7 +55,7 @@ export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waS
 
   let waSent = false;
   if ((reminder.channel === "WHATSAPP" || reminder.channel === "BOTH") && reminder.user.phone) {
-    const text = `🔔 Singapore Probashi Reminder (Slot #${reminder.slotIndex})\n\n${note}${when ? `\nScheduled for: ${when}` : ""}`;
+    const text = `🔔 Nirapode Reminder (Slot #${reminder.slotIndex})\n\n${note}${when ? `\nScheduled for: ${when}` : ""}`;
     const res = await sendWhatsAppMessage({ to: reminder.user.phone, text });
     waSent = res.success;
     if (!res.success) console.error(`[reminders] WhatsApp failed for ${reminder.id}: ${res.error}`);

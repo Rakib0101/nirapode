@@ -6,7 +6,7 @@ export default async function TermsPage() {
     },
     {
       title: "2. Account Responsibility",
-      body: "You are responsible for maintaining the confidentiality of your login credentials. Do not share your NID number or password with anyone. You are liable for all activities that occur under your account. Report any unauthorised access to us immediately at support@singapurprobashi.com.",
+      body: "You are responsible for maintaining the confidentiality of your login credentials. Do not share your NID number or password with anyone. You are liable for all activities that occur under your account. Report any unauthorised access to us immediately at support@nirapode.com.",
     },
     {
       title: "3. Share Investment Marketplace",
@@ -42,7 +42,7 @@ export default async function TermsPage() {
     },
     {
       title: "11. Contact",
-      body: "For questions about these Terms:\n\nEmail: legal@singapurprobashi.com\nWhatsApp: +65 XXXX XXXX",
+      body: "For questions about these Terms:\n\nEmail: legal@nirapode.com\nWhatsApp: +65 XXXX XXXX",
     },
   ];
 
@@ -52,7 +52,7 @@ export default async function TermsPage() {
         <div className="bg-white rounded-2xl border border-border p-8 sm:p-10">
           <p className="text-xs text-muted-foreground mb-2">Last updated: January 2026</p>
           <h1 className="text-3xl font-bold text-foreground mb-2">Terms of Service</h1>
-          <p className="text-muted-foreground mb-8">Please read these Terms of Service carefully before using the Singapur Probashi Community Platform. By registering or using the Platform, you agree to these terms.</p>
+          <p className="text-muted-foreground mb-8">Please read these Terms of Service carefully before using the Nirapode Platform. By registering or using the Platform, you agree to these terms.</p>
 
           {sections.map((section) => (
             <div key={section.title} className="mb-7">

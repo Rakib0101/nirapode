@@ -85,7 +85,7 @@ export function RemindersView({
         setMsg({ slotIndex, text: "✅ Automated Alert sent directly to your WhatsApp & Email!", error: false });
       } else {
         // Fallback: If automated WhatsApp Gateway is not yet configured by admin, open the user's direct chat
-        const rawNote = `🔔 Singapore Probashi Reminder (Slot #${slotIndex}):\n\n${note}`;
+        const rawNote = `🔔 Nirapode Reminder (Slot #${slotIndex}):\n\n${note}`;
         if (userPhone) {
           const digits = userPhone.replace(/[^\d]/g, "");
           window.open(`https://wa.me/${digits}?text=${encodeURIComponent(rawNote)}`, "_blank");

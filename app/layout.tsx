@@ -20,13 +20,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Singapur Probashi – Bangladesh Community in Singapore",
+  title: "Nirapode – Expatriate Community Platform",
   description:
-    "Complete community platform for Bangladeshi expatriates in Singapore. Share investments, air tickets, currency converter, Islamic center, and more.",
+    "Complete community platform for Bangladeshi expatriates. Share investments, air tickets, currency converter, wallet, Islamic center, and more.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Singapur Probashi",
+    title: "Nirapode",
   },
   icons: {
     apple: "/apple-touch-icon.png",
