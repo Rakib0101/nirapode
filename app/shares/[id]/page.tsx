@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { effectiveShareCertPrice } from "@/lib/share-pricing-utils";
+import { ShareholdersChart } from "@/components/shareholders-chart";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PurchaseForm } from "./purchase-form";
@@ -11,6 +12,10 @@ async function getProject(id: string) {
     include: {
       createdBy: { select: { fullName: true } },
       priceHistory: { orderBy: { changedAt: "desc" }, take: 5 },
+      shares: {
+        include: { owner: { select: { fullName: true } } },
+        orderBy: { quantity: "desc" },
+      },
       _count: { select: { shares: true, purchaseRequests: true } },
     },
   });
@@ -131,6 +136,21 @@ export default async function ShareDetailPage({
                   <span>{soldShares.toLocaleString()} sold</span>
                   <span>{project.availableShares.toLocaleString()} remaining</span>
                 </div>
+              </div>
+
+              {/* Shareholder Breakdown Chart */}
+              <div className="px-7 py-6 border-t border-border">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">📊</span>
+                  <h3 className="font-bold text-foreground text-sm">Shareholder Breakdown</h3>
+                </div>
+                <ShareholdersChart
+                  holders={project.shares.map((s) => ({
+                    name: s.owner?.fullName || "Shareholder",
+                    quantity: s.quantity,
+                  }))}
+                  availableShares={project.availableShares}
+                />
               </div>
             </div>
 

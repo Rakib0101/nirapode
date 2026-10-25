@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { requestWithdrawalAction } from "@/app/actions/withdrawals";
 import Link from "next/link";
 
@@ -8,13 +8,23 @@ const METHODS = [
   { value: "BKASH", label: "bKash" },
   { value: "NAGAD", label: "Nagad" },
   { value: "ROCKET", label: "Rocket" },
-  { value: "GCASH", label: "GCash" },
+  { value: "GCASH", label: "GCash (₱ Pesos)" },
   { value: "BANK_TRANSFER", label: "Bank Transfer" },
   { value: "PAYNOW", label: "PayNow" },
 ];
 
-export function WithdrawForm({ balance, defaultAmount }: { balance: number; defaultAmount?: string }) {
+export function WithdrawForm({
+  balance,
+  defaultAmount,
+  bdtToPhpRate,
+}: {
+  balance: number;
+  defaultAmount?: string;
+  bdtToPhpRate?: number | null;
+}) {
   const [state, action, pending] = useActionState(requestWithdrawalAction, null);
+  const [amountVal, setAmountVal] = useState(defaultAmount || "");
+  const [method, setMethod] = useState<string>("BKASH");
 
   if (state?.success) {
     return (
@@ -33,11 +43,14 @@ export function WithdrawForm({ balance, defaultAmount }: { balance: number; defa
     );
   }
 
+  const numAmount = parseFloat(amountVal) || 0;
+  const phpEstimated = bdtToPhpRate && numAmount > 0 ? numAmount * bdtToPhpRate : null;
+
   return (
     <form action={action} className="space-y-5">
       {/* Amount */}
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1.5">Amount (৳)</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Amount to Withdraw (৳ BDT)</label>
         <div className="relative">
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">৳</span>
           <input
@@ -47,9 +60,10 @@ export function WithdrawForm({ balance, defaultAmount }: { balance: number; defa
             min={10}
             max={balance}
             step={0.01}
-            defaultValue={defaultAmount}
+            value={amountVal}
+            onChange={(e) => setAmountVal(e.target.value)}
             placeholder="Minimum ৳10"
-            className="w-full pl-8 pr-3.5 py-2.5 rounded-lg border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm"
+            className="w-full pl-8 pr-3.5 py-2.5 rounded-lg border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm font-semibold"
           />
         </div>
       </div>
@@ -60,7 +74,15 @@ export function WithdrawForm({ balance, defaultAmount }: { balance: number; defa
         <div className="grid grid-cols-2 gap-2">
           {METHODS.map((m) => (
             <label key={m.value} className="cursor-pointer">
-              <input type="radio" name="paymentMethod" value={m.value} className="sr-only peer" required />
+              <input
+                type="radio"
+                name="paymentMethod"
+                value={m.value}
+                checked={method === m.value}
+                onChange={() => setMethod(m.value)}
+                className="sr-only peer"
+                required
+              />
               <div className="border border-border rounded-lg px-3 py-2 text-sm font-medium text-center transition-colors peer-checked:bg-brand-50 peer-checked:border-brand peer-checked:text-brand hover:border-brand/40 text-muted-foreground">
                 {m.label}
               </div>
@@ -69,14 +91,41 @@ export function WithdrawForm({ balance, defaultAmount }: { balance: number; defa
         </div>
       </div>
 
+      {/* GCash Pesos Payout Box (Taka to Pesos) */}
+      {method === "GCASH" && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs text-emerald-800 font-semibold">
+            <span>🇵🇭 GCash Payout (Philippines Pesos)</span>
+            {bdtToPhpRate && <span>Rate: 1 BDT = {bdtToPhpRate.toFixed(4)} PHP</span>}
+          </div>
+          {phpEstimated !== null ? (
+            <div>
+              <p className="text-xs text-emerald-700">You will receive approx:</p>
+              <p className="text-2xl font-bold font-mono text-emerald-900">
+                ₱{phpEstimated.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PHP
+              </p>
+              <p className="text-[11px] text-emerald-600 mt-1">
+                Deducted from your Taka balance: <strong>৳{numAmount.toFixed(2)} BDT</strong>
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-emerald-700">
+              Enter your BDT amount above to view estimated Pesos payout.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Account number */}
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1.5">Account / Mobile Number</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">
+          {method === "GCASH" ? "GCash Mobile Number (Philippines)" : "Account / Mobile Number"}
+        </label>
         <input
           name="accountNumber"
           type="text"
           required
-          placeholder="e.g. 01700-000000"
+          placeholder={method === "GCASH" ? "e.g. 0917-123-4567 or +63 917 123 4567" : "e.g. 01700-000000"}
           className="w-full px-3.5 py-2.5 rounded-lg border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm"
         />
       </div>
@@ -102,7 +151,7 @@ export function WithdrawForm({ balance, defaultAmount }: { balance: number; defa
       <button
         type="submit"
         disabled={pending || balance < 10}
-        className="w-full bg-brand text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-60"
+        className="w-full bg-brand text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-60 cursor-pointer shadow-xs"
       >
         {pending ? "Submitting…" : "Submit Withdrawal Request"}
       </button>

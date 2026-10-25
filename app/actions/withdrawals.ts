@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { notifyAdmin } from "@/lib/notifications";
+import { getBdtToPhpRate } from "@/lib/currency";
 
 type ActionState = { error?: string; success?: boolean } | null;
 
@@ -50,12 +51,16 @@ export async function requestWithdrawalAction(
     },
   });
 
+  const phpRate = paymentMethod === "GCASH" ? await getBdtToPhpRate() : null;
+  const phpPayout = phpRate ? `₱${(amount * phpRate).toFixed(2)} PHP (Rate: 1 BDT = ${phpRate.toFixed(4)} PHP)` : null;
+
   await notifyAdmin({
-    subject: `New withdrawal request — ৳${amount.toFixed(2)}`,
+    subject: `New withdrawal request — ৳${amount.toFixed(2)}${phpPayout ? ` (${phpPayout})` : ""}`,
     heading: "New Withdrawal Request",
     lines: [
       { label: "User", value: `${session.fullName} (${session.email})` },
       { label: "Amount", value: `৳${amount.toFixed(2)}` },
+      ...(phpPayout ? [{ label: "Estimated GCash Payout", value: phpPayout }] : []),
       { label: "Payment", value: paymentMethod },
       { label: "Account", value: `${accountName} (${accountNumber})` },
     ],

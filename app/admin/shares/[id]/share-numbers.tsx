@@ -126,7 +126,7 @@ export function ShareNumbersManager({
       <div className="px-5 py-4 border-b border-border bg-muted/30">
         <p className="text-xs font-semibold text-foreground mb-1">Add Share Numbers</p>
         <p className="text-[11px] text-muted-foreground mb-3">
-          Type a unique number (and optionally its own price) and press Enter or + to add it. Each number is the identity of one individual share. Leave price blank to use the project&apos;s default (${projectSharePriceSgd.toFixed(2)}).
+          Type a unique number (and optionally its own price) and press Enter or + to add it. Each number is the identity of one individual share. Leave price blank to use the project&apos;s default (৳{projectSharePriceSgd.toFixed(2)}).
         </p>
 
         {/* Input row */}
@@ -156,7 +156,7 @@ export function ShareNumbersManager({
             value={priceVal}
             onChange={(e) => { setPriceVal(e.target.value); setInputError(""); }}
             onKeyDown={handleKeyDown}
-            placeholder={`$${projectSharePriceSgd.toFixed(2)} (default)`}
+            placeholder={`৳${projectSharePriceSgd.toFixed(2)} (default)`}
             className="w-full sm:w-36 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
           />
           <button
@@ -186,7 +186,7 @@ export function ShareNumbersManager({
                   ) : (
                     <span>#{String(p.number).padStart(6, "0")}</span>
                   )}
-                  <span className="text-brand/80 font-bold ml-1">${(p.priceSgd ?? projectSharePriceSgd).toFixed(2)}</span>
+                  <span className="text-brand/80 font-bold ml-1">৳{(p.priceSgd ?? projectSharePriceSgd).toFixed(2)}</span>
                   <button
                     type="button"
                     onClick={() => removeFromPending(p.number)}
@@ -270,7 +270,7 @@ export function ShareNumbersManager({
                           value={editPriceVal}
                           onChange={(e) => setEditPriceVal(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") saveEditPrice(cert.id); if (e.key === "Escape") setEditingId(null); }}
-                          placeholder={`$${projectSharePriceSgd.toFixed(2)}`}
+                          placeholder={`৳${projectSharePriceSgd.toFixed(2)}`}
                           className="w-24 px-2 py-1 rounded-md border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
                         />
                         <button type="button" disabled={editPending} onClick={() => saveEditPrice(cert.id)} className="text-xs text-brand font-semibold hover:text-brand-dark disabled:opacity-50">Save</button>
@@ -279,7 +279,7 @@ export function ShareNumbersManager({
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="text-foreground">
-                          ${(cert.priceSgd != null ? Number(cert.priceSgd) : projectSharePriceSgd).toFixed(2)}
+                          ৳{(cert.priceSgd != null ? Number(cert.priceSgd) : projectSharePriceSgd).toFixed(2)}
                         </span>
                         {cert.priceSgd == null && <span className="text-[10px] text-muted-foreground">(default)</span>}
                         {!cert.ownerId && (

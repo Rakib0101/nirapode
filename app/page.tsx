@@ -1,5 +1,6 @@
 import { MRTMapCard } from "@/components/mrt-map-button";
 import { PartnerCompaniesSection } from "@/components/partner-companies-section";
+import { HomeShareChart } from "@/components/home-share-chart";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -7,8 +8,14 @@ async function getFeaturedProjects() {
 	try {
 		return await prisma.project.findMany({
 			where: { status: "ACTIVE" },
+			include: {
+				shares: {
+					include: { owner: { select: { fullName: true } } },
+					orderBy: { quantity: "desc" },
+				},
+			},
 			orderBy: { createdAt: "desc" },
-			take: 3,
+			take: 5,
 		});
 	} catch (err) {
 		console.error("Failed to load featured projects on home page:", err);
@@ -252,47 +259,28 @@ export default async function HomePage() {
 							</Link>
 						</div>
 
-						{/* Preview card */}
-						<div className="bg-white rounded-3xl border border-border p-6 shadow-xl space-y-4">
-							<div className="flex items-center justify-between pb-4 border-b border-border">
-								<span className="font-semibold text-foreground">
-									Available Projects
-								</span>
-								<span className="text-xs text-muted-foreground">
-									Updated live
-								</span>
-							</div>
-							{featuredProjects.length > 0 ? (
-								featuredProjects.map((project) => (
-									<Link
-										key={project.id}
-										href={`/shares/${project.id}`}
-										className="flex items-center justify-between p-4 bg-muted rounded-xl hover:bg-brand-50 transition-colors"
-									>
-										<div>
-											<p className="font-semibold text-sm text-foreground">
-												{project.name}
-											</p>
-											<p className="text-xs text-muted-foreground mt-0.5">
-												{project.availableShares} shares left
-											</p>
-										</div>
-										<div className="text-right">
-											<p className="font-bold text-sm text-foreground">
-												৳{Number(project.sharePriceSgd ?? 0).toFixed(2)}
-											</p>
-											<p className="text-[11px] text-muted-foreground">
-												Per Share
-											</p>
-										</div>
-									</Link>
-								))
-							) : (
+						{/* Shareholder Breakdown / Projects Chart */}
+						{featuredProjects.length > 0 ? (
+							<HomeShareChart
+								projects={featuredProjects.map((p) => ({
+									id: p.id,
+									name: p.name,
+									sharePriceSgd: Number(p.sharePriceSgd ?? 0),
+									availableShares: p.availableShares,
+									totalShares: p.totalShares,
+									holders: p.shares.map((s) => ({
+										name: s.owner?.fullName || "Shareholder",
+										quantity: s.quantity,
+									})),
+								}))}
+							/>
+						) : (
+							<div className="bg-white rounded-3xl border border-border p-6 shadow-xl space-y-4">
 								<p className="text-sm text-muted-foreground text-center py-6">
 									No projects available right now — check back soon.
 								</p>
-							)}
-						</div>
+							</div>
+						)}
 					</div>
 				</div>
 			</section>

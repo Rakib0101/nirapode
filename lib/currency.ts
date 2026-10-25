@@ -4,8 +4,8 @@ export type CurrencySource = "internet" | "manual";
 
 export type CurrencySettings = {
   source: CurrencySource;
-  manualRate: number; // 1 SGD = X BDT
-  manualPhpRate: number | null; // 1 SGD = X PHP (Pesos) — null until admin sets one
+  manualRate: number; // 1 SGD = X BDT (Dollar to Taka)
+  manualPhpRate: number | null; // 1 BDT = X PHP (Taka to Pesos) — null until admin sets one
   showBar: boolean;
 };
 
@@ -16,14 +16,28 @@ export async function getCurrencySettings(): Promise<CurrencySettings> {
     });
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     const phpRaw = map["currency_php_rate"] ? parseFloat(map["currency_php_rate"]) : NaN;
+    // Normalize: if admin entered e.g. 48.4 (per 100 BDT), normalize to per 1 BDT: 0.484
+    const normalizedPhp = isNaN(phpRaw) ? null : phpRaw > 5 ? phpRaw / 100 : phpRaw;
     return {
       source: (map["currency_source"] ?? "internet") as CurrencySource,
       manualRate: parseFloat(map["currency_bdt_rate"] ?? "83.5"),
-      manualPhpRate: isNaN(phpRaw) ? null : phpRaw,
+      manualPhpRate: normalizedPhp,
       showBar: (map["currency_show_bar"] ?? "true") === "true",
     };
   } catch {
     return { source: "internet", manualRate: 83.5, manualPhpRate: null, showBar: true };
+  }
+}
+
+export async function getBdtToPhpRate(): Promise<number | null> {
+  try {
+    const row = await prisma.siteSetting.findUnique({ where: { key: "currency_php_rate" } });
+    if (!row?.value) return null;
+    const val = parseFloat(row.value);
+    if (isNaN(val) || val <= 0) return null;
+    return val > 5 ? val / 100 : val;
+  } catch {
+    return null;
   }
 }
 

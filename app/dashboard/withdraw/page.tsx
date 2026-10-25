@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { getBdtToPhpRate } from "@/lib/currency";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WithdrawForm } from "./withdraw-form";
@@ -13,7 +14,10 @@ export default async function WithdrawPage({
   if (!session) redirect("/login");
 
   const { amount } = await searchParams;
-  const wallet = await prisma.wallet.findUnique({ where: { userId: session.userId } });
+  const [wallet, phpRate] = await Promise.all([
+    prisma.wallet.findUnique({ where: { userId: session.userId } }),
+    getBdtToPhpRate(),
+  ]);
   const balance = wallet ? Number(wallet.balance) : 0;
 
   return (
@@ -36,7 +40,7 @@ export default async function WithdrawPage({
             <p className="text-lg font-bold text-foreground">৳{balance.toFixed(2)}</p>
           </div>
 
-          <WithdrawForm balance={balance} defaultAmount={amount} />
+          <WithdrawForm balance={balance} defaultAmount={amount} bdtToPhpRate={phpRate} />
         </div>
       </div>
     </div>

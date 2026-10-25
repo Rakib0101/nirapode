@@ -116,34 +116,41 @@ export function CurrencySettingsForm({ settings, liveRate }: Props) {
         <input type="hidden" name="manualRate" value={manualRate} />
       )}
 
-      {/* Manual Peso rate — independent of the BDT source toggle above, since there's no live PHP feed */}
+      {/* Taka to Pesos rate for Withdrawal (GCash / Philippines payout) */}
       <div>
-        <label className="block text-sm font-semibold text-foreground mb-2">
-          Manual Rate <span className="text-muted-foreground font-normal">(1 SGD = ? Pesos, optional)</span>
+        <label className="block text-sm font-semibold text-foreground mb-1">
+          Taka to Pesos Withdrawal Rate <span className="text-muted-foreground font-normal">(1 BDT = ? Pesos, for GCash payout)</span>
         </label>
+        <p className="text-xs text-muted-foreground mb-2">
+          Sets the payout rate when users withdraw their BDT balance to GCash / Philippines Pesos. (e.g. enter <span className="font-mono font-semibold">0.484</span> for 1 BDT = 0.484 PHP, or <span className="font-mono font-semibold">48.4</span> for ৳100 = ₱48.40)
+        </p>
         <div className="relative">
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
-            1 SGD =
+            1 BDT =
           </span>
           <input
             name="manualPhpRate"
             type="number"
-            step="0.01"
-            min="0.01"
+            step="0.0001"
+            min="0.0001"
             value={manualPhpRate}
             onChange={(e) => setManualPhpRate(e.target.value)}
-            placeholder="e.g. 31.50"
+            placeholder="e.g. 0.484"
             className="w-full pl-20 pr-16 py-2.5 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground font-semibold"
           />
           <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
             ₱ PHP
           </span>
         </div>
-        {manualPhpRate && !isNaN(parseFloat(manualPhpRate)) && parseFloat(manualPhpRate) > 0 && (
-          <p className="text-xs text-muted-foreground mt-1.5">
-            Preview: 1 SGD = {parseFloat(manualPhpRate).toFixed(2)} ₱ PHP
-          </p>
-        )}
+        {manualPhpRate && !isNaN(parseFloat(manualPhpRate)) && parseFloat(manualPhpRate) > 0 && (() => {
+          const val = parseFloat(manualPhpRate);
+          const perBdt = val > 5 ? val / 100 : val;
+          return (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Preview: ৳ 1,000 BDT = ₱ {(1000 * perBdt).toFixed(2)} PHP (Rate: 1 BDT = {perBdt.toFixed(4)} PHP)
+            </p>
+          );
+        })()}
       </div>
 
       {/* Show on website toggle */}

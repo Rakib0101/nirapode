@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getBdtToPhpRate } from "@/lib/currency";
 import { ProcessWithdrawalForm } from "./process-form";
 import { ScreenshotViewerModal } from "@/components/screenshot-modal";
 
@@ -25,7 +26,10 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default async function AdminWithdrawalsPage() {
-  const withdrawals = await getWithdrawals();
+  const [withdrawals, phpRate] = await Promise.all([
+    getWithdrawals(),
+    getBdtToPhpRate(),
+  ]);
   const pending = withdrawals.filter((w) => w.status === "PENDING");
 
   return (
@@ -56,7 +60,14 @@ export default async function AdminWithdrawalsPage() {
                     <p className="font-medium text-foreground">{w.user.fullName}</p>
                     <p className="text-xs text-muted-foreground">{w.user.email}</p>
                   </td>
-                  <td className="px-4 py-3.5 font-bold text-foreground">৳{Number(w.amount).toFixed(2)}</td>
+                  <td className="px-4 py-3.5">
+                    <p className="font-bold text-foreground">৳{Number(w.amount).toFixed(2)}</p>
+                    {w.paymentMethod === "GCASH" && phpRate && (
+                      <p className="text-[11px] font-semibold text-emerald-600 font-mono mt-0.5">
+                        ≈ ₱{(Number(w.amount) * phpRate).toFixed(2)} PHP
+                      </p>
+                    )}
+                  </td>
                   <td className="px-4 py-3.5 text-muted-foreground">{METHOD_LABELS[w.paymentMethod] ?? w.paymentMethod}</td>
                   <td className="px-4 py-3.5">
                     <p className="font-mono text-xs text-foreground">{w.accountNumber}</p>

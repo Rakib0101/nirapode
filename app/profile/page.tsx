@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { AvatarUpload } from "./avatar-upload";
 import { ReferralCard } from "./referral-card";
 import { EditProfileForm } from "./edit-profile-form";
-import { lockPinAction } from "@/app/actions/pin";
+import { PinLockToggle } from "./pin-lock-toggle";
 
 export default async function ProfilePage() {
 	const session = await getSession();
@@ -221,35 +221,8 @@ export default async function ProfilePage() {
 					</div>
 				</div>
 
-				{/* Security */}
-				<div className="bg-white rounded-xl border border-border p-5">
-					<h2 className="font-semibold text-foreground mb-1 text-sm">
-						App Lock PIN
-					</h2>
-					<p className="text-xs text-muted-foreground mb-4">
-						{user.pinHash
-							? "Your account is protected by a 4-digit PIN, asked once per fresh visit."
-							: "Set a 4-digit PIN to lock the app on this and other devices."}
-					</p>
-					<div className="flex flex-wrap gap-2">
-						<Link
-							href="/set-pin"
-							className="text-xs font-semibold bg-muted text-foreground px-4 py-2 rounded-lg hover:bg-border transition-colors"
-						>
-							{user.pinHash ? "Change PIN" : "Set PIN"}
-						</Link>
-						{user.pinHash && (
-							<form action={lockPinAction}>
-								<button
-									type="submit"
-									className="text-xs font-semibold bg-amber-50 text-amber-700 px-4 py-2 rounded-lg hover:bg-amber-100 transition-colors"
-								>
-									Lock App Now
-								</button>
-							</form>
-						)}
-					</div>
-				</div>
+				{/* Security: 4-digit App Lock PIN Mode ON / OFF */}
+				<PinLockToggle hasPin={Boolean(user.pinHash)} />
 			</div>
 		</div>
 	);

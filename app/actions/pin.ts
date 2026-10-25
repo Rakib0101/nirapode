@@ -1,10 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession, markPinVerifiedAndUpdateSession, clearPinVerified } from "@/lib/session";
+import { getSession, markPinVerifiedAndUpdateSession, clearPinVerified, updateSessionClaims } from "@/lib/session";
 import { generateOTP, sendOTPEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 type ActionState = {
@@ -175,4 +176,44 @@ export async function lockPinAction(): Promise<void> {
   if (!session) redirect("/login");
   await clearPinVerified();
   redirect("/verify-pin");
+}
+
+// Allows user to turn off 4-digit PIN lock mode
+export async function disablePinAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const session = await getSession();
+    if (!session) redirect("/login");
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { pinHash: true },
+    });
+
+    if (!user?.pinHash) {
+      return { success: true };
+    }
+
+    const pin = (formData?.get("pin") as string)?.trim();
+    if (pin) {
+      const match = await bcrypt.compare(pin, user.pinHash);
+      if (!match) return { error: "Incorrect PIN. Cannot disable app lock." };
+    }
+
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: { pinHash: null },
+    });
+
+    await updateSessionClaims({ hasPin: false });
+    await clearPinVerified();
+    revalidatePath("/profile");
+    return { success: true };
+  } catch (err: unknown) {
+    if (isNextRedirect(err)) throw err;
+    console.error("Disable PIN error:", err);
+    return { error: "Failed to turn off PIN lock. Please try again." };
+  }
 }

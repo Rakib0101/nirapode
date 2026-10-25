@@ -60,11 +60,13 @@ export async function saveCurrencySettingsAction(_prev: State, formData: FormDat
   ];
 
   if (rawPhpRate) {
+    const parsedPhp = parseFloat(rawPhpRate);
+    const normalized = parsedPhp > 5 ? String(parsedPhp / 100) : rawPhpRate;
     updates.push(
       prisma.siteSetting.upsert({
         where: { key: "currency_php_rate" },
-        create: { key: "currency_php_rate", value: rawPhpRate },
-        update: { value: rawPhpRate },
+        create: { key: "currency_php_rate", value: normalized },
+        update: { value: normalized },
       })
     );
   }
@@ -73,6 +75,8 @@ export async function saveCurrencySettingsAction(_prev: State, formData: FormDat
 
   revalidatePath("/", "layout");
   revalidatePath("/currency");
+  revalidatePath("/dashboard/withdraw");
+  revalidatePath("/admin/withdrawals");
   revalidatePath("/admin/settings");
 
   return { success: true };
