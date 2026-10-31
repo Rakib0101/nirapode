@@ -6,6 +6,7 @@ import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { InstallPwaButton } from "@/components/install-pwa-button";
 import { getSession } from "@/lib/session";
 import { CurrencyRateBar } from "@/components/currency-rate-bar";
+import { ThemeScript } from "@/components/theme-toggle";
 import { prisma } from "@/lib/prisma";
 import { getSiteContactSettings } from "@/lib/site-contact";
 
@@ -29,6 +30,10 @@ export const metadata: Metadata = {
     title: "Nirapode",
   },
   icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.png", type: "image/png", sizes: "512x512" },
+    ],
     apple: "/apple-touch-icon.png",
   },
 };
@@ -78,8 +83,12 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
+      <head>
+        <ThemeScript />
+      </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
         <ServiceWorkerRegister />
         <InstallPwaButton />

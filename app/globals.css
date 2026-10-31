@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-@theme {
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
 	--color-brand: #8133f1;
 	--color-brand-50: #f3ebff;
 	--color-brand-100: #e0ccff;
@@ -10,6 +12,33 @@
 	--color-muted: #f7f7f7;
 	--color-muted-foreground: #6b6b6b;
 	--color-border: #e8e8e8;
+	--color-card: #ffffff;
+}
+
+html.dark {
+	--color-brand: #9d5cf7;
+	--color-brand-50: #23193a;
+	--color-brand-100: #3b2566;
+	--color-brand-dark: #b886ff;
+	--color-background: #0f1117;
+	--color-foreground: #f3f4f6;
+	--color-muted: #1a1e28;
+	--color-muted-foreground: #9ca3af;
+	--color-border: #272d3b;
+	--color-card: #151923;
+}
+
+@theme {
+	--color-brand: var(--color-brand);
+	--color-brand-50: var(--color-brand-50);
+	--color-brand-100: var(--color-brand-100);
+	--color-brand-dark: var(--color-brand-dark);
+	--color-background: var(--color-background);
+	--color-foreground: var(--color-foreground);
+	--color-muted: var(--color-muted);
+	--color-muted-foreground: var(--color-muted-foreground);
+	--color-border: var(--color-border);
+	--color-card: var(--color-card);
 }
 
 @theme inline {
@@ -20,6 +49,54 @@
 body {
 	background: var(--color-background);
 	color: var(--color-foreground);
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Automatic dark mode adaptations for existing UI cards & inputs */
+html.dark .bg-white {
+	background-color: var(--color-card) !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-gray-50,
+html.dark .bg-zinc-50 {
+	background-color: var(--color-muted) !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-gray-900,
+html.dark .text-zinc-900 {
+	color: var(--color-foreground) !important;
+}
+
+html.dark .text-slate-800,
+html.dark .text-gray-800,
+html.dark .text-slate-700,
+html.dark .text-gray-700 {
+	color: #e5e7eb !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-gray-600,
+html.dark .text-slate-500,
+html.dark .text-gray-500 {
+	color: var(--color-muted-foreground) !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-gray-200,
+html.dark .border-slate-100,
+html.dark .border-gray-100 {
+	border-color: var(--color-border) !important;
+}
+
+/* Keep form inputs visible and styled well in dark mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+	background-color: var(--color-muted) !important;
+	color: var(--color-foreground) !important;
+	border-color: var(--color-border) !important;
 }
 
 /* ── Mobile app-like safe area ─────────────────────────────────────────────── */

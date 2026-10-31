@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { usePathname } from "next/navigation";
 
 const nav = [
@@ -147,8 +148,9 @@ export function AdminSidebar({ userName, userRole, userEmail, pendingCounts }: P
     // Desktop only — mobile navigation is handled by AdminBottomNav
     <aside className="hidden lg:flex flex-col h-screen sticky top-0 bg-white border-r border-border w-60 shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border">
+      <div className="flex items-center justify-between gap-2.5 px-4 py-3.5 border-b border-border">
         <Logo size="sm" />
+        <ThemeToggle compact />
       </div>
 
       {/* Nav */}

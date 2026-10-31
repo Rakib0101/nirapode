@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useRef, useEffect } from "react";
 import type { SessionPayload } from "@/lib/session";
 
@@ -484,7 +485,7 @@ export function Navbar({
 		: navLinks;
 
 	return (
-		<header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
+		<header className="sticky top-0 z-50 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-b border-border">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between h-14 lg:h-16">
 					{/* Logo */}
@@ -506,7 +507,8 @@ export function Navbar({
 					</nav>
 
 					{/* Mobile right: tappable avatar with dropdown + hamburger menu */}
-					<div className="flex lg:hidden items-center gap-1">
+					<div className="flex lg:hidden items-center gap-1.5">
+						<ThemeToggle compact />
 						{user && (
 							<MobileAvatarMenu user={user} walletBalance={walletBalance} pendingCheckout={pendingCheckout} />
 						)}
@@ -523,6 +525,7 @@ export function Navbar({
 
 					{/* Desktop right side */}
 					<div className="hidden lg:flex items-center gap-3">
+						<ThemeToggle compact />
 						{user ? (
 							<AvatarDropdown user={user} />
 						) : (

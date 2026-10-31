@@ -1,76 +1,96 @@
-import Link from "next/link";
+import Image from "next/image";
 
 interface LogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
-  variant?: "brand" | "white";
+  variant?: "auto" | "light" | "dark" | "white";
   showText?: boolean;
 }
 
 export function Logo({
   className = "",
   size = "md",
-  variant = "brand",
+  variant = "auto",
   showText = true,
 }: LogoProps) {
-  // Dimensions
-  const iconSize = size === "sm" ? "w-7 h-7" : size === "lg" ? "w-10 h-10" : "w-8 h-8";
-  const textSize = size === "sm" ? "text-lg" : size === "lg" ? "text-2xl" : "text-xl";
-  const isWhite = variant === "white";
+  // Height sizing
+  const dimensions =
+    size === "sm"
+      ? { width: 140, height: 35, hClass: "h-7 sm:h-8" }
+      : size === "lg"
+      ? { width: 220, height: 55, hClass: "h-11 sm:h-12" }
+      : { width: 176, height: 44, hClass: "h-9 sm:h-10" };
 
-  return (
-    <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
-      {/* Nirapode Shield Icon */}
-      <div
-        className={`${iconSize} rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-105 ${
-          isWhite
-            ? "bg-white text-brand shadow-sm"
-            : "bg-linear-to-tr from-brand via-purple-600 to-indigo-600 text-white shadow-md shadow-brand/20"
-        }`}
-      >
-        <svg
-          className="w-4/5 h-4/5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {/* Shield Base */}
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          {/* Inner Safety Checkmark */}
-          <path d="m9 12 2 2 4-4" strokeWidth="2.5" />
-        </svg>
+  if (!showText) {
+    // Icon-only view (e.g. collapsed sidebar or favicon mark)
+    const iconDim = size === "sm" ? 32 : size === "lg" ? 48 : 40;
+    return (
+      <div className={`relative inline-flex items-center shrink-0 ${className}`}>
+        <Image
+          src="/favicon.png"
+          alt="Nirapode"
+          width={iconDim}
+          height={iconDim}
+          priority
+          className="rounded-xl object-contain drop-shadow-xs"
+        />
       </div>
+    );
+  }
 
-      {/* Brand Name Typography */}
-      {showText && (
-        <div className="flex flex-col leading-none">
-          <div className="flex items-center tracking-tight">
-            <span
-              className={`font-black ${textSize} tracking-tight ${
-                isWhite
-                  ? "text-white"
-                  : "bg-linear-to-r from-brand via-purple-700 to-indigo-800 bg-clip-text text-transparent"
-              }`}
-              style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
-            >
-              nirapode
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-0.5 mb-1 shrink-0" />
-          </div>
-          {size === "lg" && (
-            <span
-              className={`text-[10px] font-semibold tracking-wider uppercase mt-1 ${
-                isWhite ? "text-white/80" : "text-muted-foreground"
-              }`}
-            >
-              Expatriate Platform
-            </span>
-          )}
-        </div>
-      )}
+  if (variant === "dark" || variant === "white") {
+    // Dedicated dark background version (white text)
+    return (
+      <div className={`relative inline-flex items-center shrink-0 ${className}`}>
+        <Image
+          src="/logo-dark.png"
+          alt="Nirapode"
+          width={dimensions.width}
+          height={dimensions.height}
+          priority
+          className={`w-auto ${dimensions.hClass} object-contain`}
+        />
+      </div>
+    );
+  }
+
+  if (variant === "light") {
+    // Dedicated light background version (dark text)
+    return (
+      <div className={`relative inline-flex items-center shrink-0 ${className}`}>
+        <Image
+          src="/logo-light.png"
+          alt="Nirapode"
+          width={dimensions.width}
+          height={dimensions.height}
+          priority
+          className={`w-auto ${dimensions.hClass} object-contain`}
+        />
+      </div>
+    );
+  }
+
+  // "auto": displays logo-light on light theme, and logo-dark on dark theme
+  return (
+    <div className={`relative inline-flex items-center shrink-0 ${className}`}>
+      {/* Light theme logo */}
+      <Image
+        src="/logo-light.png"
+        alt="Nirapode"
+        width={dimensions.width}
+        height={dimensions.height}
+        priority
+        className={`w-auto ${dimensions.hClass} object-contain dark:hidden`}
+      />
+      {/* Dark theme logo */}
+      <Image
+        src="/logo-dark.png"
+        alt="Nirapode"
+        width={dimensions.width}
+        height={dimensions.height}
+        priority
+        className={`w-auto ${dimensions.hClass} object-contain hidden dark:block`}
+      />
     </div>
   );
 }

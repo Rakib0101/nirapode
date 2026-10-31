@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { DEFAULT_CONTACT_SETTINGS, formatWhatsAppLink, type SiteContactSettings } from "@/lib/site-contact-types";
 
 export function Footer({ contact = DEFAULT_CONTACT_SETTINGS }: { contact?: SiteContactSettings }) {
@@ -122,7 +123,8 @@ export function Footer({ contact = DEFAULT_CONTACT_SETTINGS }: { contact?: SiteC
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} Nirapode. All rights reserved.</p>
-          <div className="flex gap-6">
+          <div className="flex items-center gap-6">
+            <ThemeToggle />
             <Link href="/privacy" className="hover:text-brand transition-colors">
               Privacy Policy
             </Link>
