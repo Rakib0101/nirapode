@@ -13,17 +13,16 @@ export function Logo({
   variant = "auto",
   showText = true,
 }: LogoProps) {
-  // Height sizing
+  // Height sizing: using exact aspect ratio of 349 x 88 (~3.96:1)
   const dimensions =
     size === "sm"
-      ? { width: 140, height: 35, hClass: "h-7 sm:h-8" }
+      ? { width: 124, height: 31, hClass: "h-7 sm:h-7.5" }
       : size === "lg"
-      ? { width: 220, height: 55, hClass: "h-11 sm:h-12" }
-      : { width: 176, height: 44, hClass: "h-9 sm:h-10" };
+      ? { width: 198, height: 50, hClass: "h-11 sm:h-12" }
+      : { width: 158, height: 40, hClass: "h-8.5 sm:h-9" };
 
   if (!showText) {
-    // Icon-only view (e.g. collapsed sidebar or favicon mark)
-    const iconDim = size === "sm" ? 32 : size === "lg" ? 48 : 40;
+    const iconDim = size === "sm" ? 28 : size === "lg" ? 44 : 36;
     return (
       <div className={`relative inline-flex items-center shrink-0 ${className}`}>
         <Image
@@ -32,14 +31,13 @@ export function Logo({
           width={iconDim}
           height={iconDim}
           priority
-          className="rounded-xl object-contain drop-shadow-xs"
+          className="w-auto h-auto object-contain drop-shadow-xs"
         />
       </div>
     );
   }
 
   if (variant === "dark" || variant === "white") {
-    // Dedicated dark background version (white text)
     return (
       <div className={`relative inline-flex items-center shrink-0 ${className}`}>
         <Image
@@ -55,7 +53,6 @@ export function Logo({
   }
 
   if (variant === "light") {
-    // Dedicated light background version (dark text)
     return (
       <div className={`relative inline-flex items-center shrink-0 ${className}`}>
         <Image
@@ -73,7 +70,6 @@ export function Logo({
   // "auto": displays logo-light on light theme, and logo-dark on dark theme
   return (
     <div className={`relative inline-flex items-center shrink-0 ${className}`}>
-      {/* Light theme logo */}
       <Image
         src="/logo-light.png"
         alt="Nirapode"
@@ -82,7 +78,6 @@ export function Logo({
         priority
         className={`w-auto ${dimensions.hClass} object-contain dark:hidden`}
       />
-      {/* Dark theme logo */}
       <Image
         src="/logo-dark.png"
         alt="Nirapode"

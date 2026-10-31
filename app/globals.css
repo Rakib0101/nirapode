@@ -3,29 +3,33 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-	--color-brand: #8133f1;
-	--color-brand-50: #f3ebff;
-	--color-brand-100: #e0ccff;
-	--color-brand-dark: #6920d4;
+	--color-brand: #4f46e5;
+	--color-brand-50: #eef2ff;
+	--color-brand-100: #e0e7ff;
+	--color-brand-dark: #3730a3;
+	--color-brand-emerald: #10b981;
+	--color-brand-navy: #1e1b4b;
 	--color-background: #ffffff;
-	--color-foreground: #0a0a0a;
-	--color-muted: #f7f7f7;
-	--color-muted-foreground: #6b6b6b;
-	--color-border: #e8e8e8;
+	--color-foreground: #0f172a;
+	--color-muted: #f8fafc;
+	--color-muted-foreground: #64748b;
+	--color-border: #e2e8f0;
 	--color-card: #ffffff;
 }
 
 html.dark {
-	--color-brand: #9d5cf7;
-	--color-brand-50: #23193a;
-	--color-brand-100: #3b2566;
-	--color-brand-dark: #b886ff;
-	--color-background: #0f1117;
-	--color-foreground: #f3f4f6;
-	--color-muted: #1a1e28;
-	--color-muted-foreground: #9ca3af;
-	--color-border: #272d3b;
-	--color-card: #151923;
+	--color-brand: #6366f1;
+	--color-brand-50: #1e1b4b;
+	--color-brand-100: #312e81;
+	--color-brand-dark: #818cf8;
+	--color-brand-emerald: #34d399;
+	--color-brand-navy: #0f0e26;
+	--color-background: #0b0c16;
+	--color-foreground: #f8fafc;
+	--color-muted: #151828;
+	--color-muted-foreground: #94a3b8;
+	--color-border: #22263a;
+	--color-card: #121422;
 }
 
 @theme {
