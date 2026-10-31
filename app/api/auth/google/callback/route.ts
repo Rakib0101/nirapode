@@ -101,8 +101,22 @@ export async function GET(req: NextRequest) {
     hasPin: Boolean(user.pinHash),
   });
 
-  // Prompt Google users who don't have a 4-digit PIN set to create one
-  const targetPath = user.pinHash ? "/dashboard" : "/set-pin";
+  // Check if admin has enabled/disabled prompting Google users to set a PIN
+  let shouldPromptPin = !user.pinHash;
+  if (shouldPromptPin) {
+    try {
+      const pinSetting = await prisma.siteSetting.findUnique({
+        where: { key: "google_pin_prompt_enabled" },
+      });
+      if (pinSetting?.value === "false") {
+        shouldPromptPin = false;
+      }
+    } catch {
+      // Keep default behavior if setting lookup fails
+    }
+  }
+
+  const targetPath = shouldPromptPin ? "/set-pin" : "/dashboard";
   const response = NextResponse.redirect(new URL(targetPath, req.url));
   if (refCode) response.cookies.delete(REFERRAL_COOKIE_NAME);
   return response;

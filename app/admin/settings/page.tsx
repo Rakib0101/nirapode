@@ -2,7 +2,7 @@ import { getCurrencySettings, getLiveBdtRate } from "@/lib/currency";
 import { getAllCommissionSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
 import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates } from "@/lib/share-pricing";
 import { getAdminNotificationEmail, getAdminNotificationPhone, getModuleNotificationOverride } from "@/lib/notifications";
-import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings } from "@/app/actions/admin-settings";
+import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings, getPinAuthSettings } from "@/app/actions/admin-settings";
 import { getSiteContactSettings } from "@/lib/site-contact";
 import { prisma } from "@/lib/prisma";
 import { CurrencySettingsForm } from "./currency-form";
@@ -20,6 +20,7 @@ import { ReminderPriceForm } from "./reminder-price-form";
 import { SmtpSettingsForm } from "./smtp-form";
 import { WhatsAppApiSettingsForm } from "./whatsapp-form";
 import { SiteContactForm } from "./site-contact-form";
+import { PinAuthSettingsForm } from "./pin-settings-form";
 import { TransferFeeForm } from "./transfer-fee-form";
 import { getTransferFeeSetting } from "@/lib/wallet";
 import { ReminderCronPanel } from "./reminder-cron-panel";
@@ -65,6 +66,7 @@ export default async function AdminSettingsPage() {
     contactSettings,
     transferFee,
     reminderCronKey,
+    pinAuthSettings,
     requestHeaders,
   ] = await Promise.all([
     getCurrencySettings(),
@@ -86,6 +88,7 @@ export default async function AdminSettingsPage() {
     getSiteContactSettings(),
     getTransferFeeSetting(),
     getReminderCronKey(),
+    getPinAuthSettings(),
     headers(),
   ]);
 
@@ -452,6 +455,28 @@ export default async function AdminSettingsPage() {
               </div>
               <div className="p-5 sm:p-7">
                 <CommissionSettingsForm settings={commissionSettings} />
+              </div>
+            </div>
+          </div>
+        }
+        securityContent={
+          <div className="max-w-3xl">
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                    <span className="text-lg">🔒</span>
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">PIN Setup & App-Lock Security</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Configure Google account login PIN prompt and master switch for the 4-digit security PIN lock system
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 sm:p-7">
+                <PinAuthSettingsForm settings={pinAuthSettings} />
               </div>
             </div>
           </div>

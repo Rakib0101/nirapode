@@ -719,3 +719,59 @@ export async function saveSiteContactSettingsAction(_prev: State, formData: Form
   revalidatePath("/admin/settings");
   return { success: true };
 }
+
+// ─── PIN Security & Google Onboarding Settings ───────────────────────────────
+
+export type PinAuthSettings = {
+  googlePinPromptEnabled: boolean;
+  pinLockGlobalEnabled: boolean;
+};
+
+export async function getPinAuthSettings(): Promise<PinAuthSettings> {
+  try {
+    const rows = await prisma.siteSetting.findMany({
+      where: {
+        key: { in: ["google_pin_prompt_enabled", "pin_lock_global_enabled"] },
+      },
+    });
+
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+
+    return {
+      googlePinPromptEnabled: map.get("google_pin_prompt_enabled") !== "false",
+      pinLockGlobalEnabled: map.get("pin_lock_global_enabled") !== "false",
+    };
+  } catch {
+    return {
+      googlePinPromptEnabled: true,
+      pinLockGlobalEnabled: true,
+    };
+  }
+}
+
+export async function savePinAuthSettingsAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  const googlePinPromptEnabled = formData.get("googlePinPromptEnabled") === "on";
+  const pinLockGlobalEnabled = formData.get("pinLockGlobalEnabled") === "on";
+
+  await prisma.$transaction([
+    prisma.siteSetting.upsert({
+      where: { key: "google_pin_prompt_enabled" },
+      create: { key: "google_pin_prompt_enabled", value: googlePinPromptEnabled ? "true" : "false" },
+      update: { value: googlePinPromptEnabled ? "true" : "false" },
+    }),
+    prisma.siteSetting.upsert({
+      where: { key: "pin_lock_global_enabled" },
+      create: { key: "pin_lock_global_enabled", value: pinLockGlobalEnabled ? "true" : "false" },
+      update: { value: pinLockGlobalEnabled ? "true" : "false" },
+    }),
+  ]);
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/profile");
+  return { success: true };
+}
