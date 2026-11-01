@@ -6,10 +6,15 @@ import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
 import { notifyAdmin } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
-  // Determine origin dynamically from incoming request headers
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
-  const base = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000");
+  let base = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  if (base) {
+    base = base.replace(/\/+$/, "");
+  }
+  if (!base) {
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    const proto = req.headers.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
+    base = host ? `${proto}://${host}` : "http://localhost:3000";
+  }
 
   const code = req.nextUrl.searchParams.get("code");
 
