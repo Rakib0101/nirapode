@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { renderBrandEmail } from "@/lib/email-template";
 
@@ -6,7 +7,7 @@ async function getEmailConfig() {
   try {
     const settings = await prisma.siteSetting.findMany({
       where: {
-        key: { in: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from", "smtp_secure"] },
+        key: { in: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from", "smtp_secure", "resend_api_key"] },
       },
     });
 
@@ -16,27 +17,53 @@ async function getEmailConfig() {
     const port = Number(map.get("smtp_port") || process.env.SMTP_PORT || 587);
     const user = map.get("smtp_user") || process.env.SMTP_USER || "";
     const pass = map.get("smtp_pass") || process.env.SMTP_PASS || "";
-    const from = map.get("smtp_from") || process.env.SMTP_FROM || user || "";
+    const from = map.get("smtp_from") || process.env.SMTP_FROM || "Nirapode <support@nirapode.com>";
     const secure = map.get("smtp_secure") === "true" || process.env.SMTP_SECURE === "true";
+    const resendApiKey = map.get("resend_api_key") || process.env.RESEND_API_KEY || "";
 
-    return { host, port, user, pass, from, secure };
+    return { host, port, user, pass, from, secure, resendApiKey };
   } catch {
     return {
       host: process.env.SMTP_HOST || "",
       port: Number(process.env.SMTP_PORT ?? 587),
       user: process.env.SMTP_USER || "",
       pass: process.env.SMTP_PASS || "",
-      from: process.env.SMTP_FROM || process.env.SMTP_USER || "",
+      from: process.env.SMTP_FROM || "Nirapode <support@nirapode.com>",
       secure: process.env.SMTP_SECURE === "true",
+      resendApiKey: process.env.RESEND_API_KEY || "",
     };
   }
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   const config = await getEmailConfig();
+  const fromAddress = config.from.includes("<") ? config.from : `Nirapode <${config.from}>`;
 
+  // 1. If Resend API Key is available or configured, prefer Resend for fast delivery
+  const resendKey = config.resendApiKey || (config.pass.startsWith("re_") ? config.pass : "");
+  if (resendKey) {
+    try {
+      const resend = new Resend(resendKey);
+      const res = await resend.emails.send({
+        from: fromAddress,
+        to,
+        subject,
+        html,
+      });
+      if (res.error) {
+        console.warn("[sendEmail] Resend API error:", res.error);
+        // Fall back to SMTP transporter below if Resend fails
+      } else {
+        return;
+      }
+    } catch (err) {
+      console.warn("[sendEmail] Resend SDK failed, attempting SMTP fallback:", err);
+    }
+  }
+
+  // 2. Fall back to standard SMTP (Gmail or custom SMTP)
   if (!config.host || !config.user || !config.pass) {
-    console.warn("⚠️ SMTP credentials not configured (in SiteSetting or .env). Email to:", to, "was skipped.");
+    console.warn("⚠️ Neither Resend nor SMTP credentials configured. Email to:", to, "was skipped.");
     return;
   }
 
@@ -50,7 +77,6 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     },
   });
 
-  const fromAddress = config.from.includes("<") ? config.from : `Nirapode <${config.from}>`;
   await transporter.sendMail({ from: fromAddress, to, subject, html });
 }
 
