@@ -9,11 +9,16 @@ export default async function SendMoneyPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [wallet, feeSetting] = await Promise.all([
+  const [wallet, feeSetting, user] = await Promise.all([
     prisma.wallet.findUnique({ where: { userId: session.userId }, select: { balance: true } }),
     getTransferFeeSetting(),
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { passwordHash: true, pinHash: true },
+    }),
   ]);
   const balance = wallet ? Number(wallet.balance) : 0;
+  const hasSecurityAuth = Boolean(user?.passwordHash || user?.pinHash);
 
   return (
     <div className="min-h-screen bg-muted">
@@ -37,7 +42,13 @@ export default async function SendMoneyPage() {
             <p className="text-lg font-bold text-foreground">৳{balance.toFixed(2)}</p>
           </div>
 
-          <SendMoneyForm balance={balance} feeSetting={feeSetting} />
+          <SendMoneyForm
+            balance={balance}
+            feeSetting={feeSetting}
+            hasSecurityAuth={hasSecurityAuth}
+            hasPin={Boolean(user?.pinHash)}
+            hasPassword={Boolean(user?.passwordHash)}
+          />
         </div>
       </div>
     </div>

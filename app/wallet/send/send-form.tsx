@@ -8,7 +8,19 @@ import { computeTransferFee, type TransferFeeSetting } from "@/lib/wallet-tx";
 const INPUT =
   "w-full px-3.5 py-2.5 rounded-lg border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm";
 
-export function SendMoneyForm({ balance, feeSetting }: { balance: number; feeSetting: TransferFeeSetting }) {
+export function SendMoneyForm({
+  balance,
+  feeSetting,
+  hasSecurityAuth,
+  hasPin,
+  hasPassword,
+}: {
+  balance: number;
+  feeSetting: TransferFeeSetting;
+  hasSecurityAuth: boolean;
+  hasPin: boolean;
+  hasPassword: boolean;
+}) {
   const [state, action, pending] = useActionState(sendMoneyAction, null);
   const [amount, setAmount] = useState("");
 
@@ -84,21 +96,64 @@ export function SendMoneyForm({ balance, feeSetting }: { balance: number; feeSet
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-1.5">Confirm with your Password / PIN</label>
-        <input name="password" type="password" required autoComplete="current-password" className={INPUT} />
-      </div>
+      {/* Confirmation Auth */}
+      {hasSecurityAuth ? (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1.5">
+            {hasPin && hasPassword
+              ? "Confirm with your 4-Digit PIN or Password"
+              : hasPin
+              ? "Confirm with your 4-Digit Security PIN"
+              : "Confirm with your Account Password"}
+          </label>
+          <input
+            name="password"
+            type="password"
+            required
+            placeholder={hasPin ? "Enter your 4-digit PIN" : "Enter your password"}
+            autoComplete="current-password"
+            className={INPUT}
+          />
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <span className="text-amber-600 text-lg">⚠️</span>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-amber-900">Security PIN / Password Required</p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                You signed in with Google and haven&apos;t set a security PIN or password yet. To protect your wallet funds from unauthorized transfers, please set a 4-digit PIN first.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/set-pin"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 px-3.5 py-2 rounded-lg transition-colors shadow-2xs"
+          >
+            🔒 Set 4-Digit PIN Now (Takes 10 seconds) →
+          </Link>
+        </div>
+      )}
 
       {state?.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{state.error}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center justify-between gap-3">
+            <span>{state.error}</span>
+            {state.error.includes("PIN") && (
+              <Link href="/set-pin" className="text-xs font-semibold text-brand underline shrink-0">
+                Set PIN →
+              </Link>
+            )}
+          </div>
+        </div>
       )}
 
       <button
         type="submit"
-        disabled={pending || total > balance}
-        className="w-full bg-brand text-white rounded-xl py-3 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-60"
+        disabled={pending || total > balance || !hasSecurityAuth}
+        className="w-full bg-brand text-white rounded-xl py-3 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
       >
-        {pending ? "Sending…" : "Send Money"}
+        {pending ? "Sending…" : !hasSecurityAuth ? "Please Set Security PIN to Send Money" : "Send Money"}
       </button>
     </form>
   );
