@@ -599,6 +599,86 @@ export async function saveSmtpSettingsAction(_prev: State, formData: FormData): 
   return { success: true };
 }
 
+export async function testSmtpEmailAction(testEmail: string): Promise<{ success: boolean; message: string }> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { success: false, message: "Unauthorized." };
+  }
+
+  try {
+    const settings = await prisma.siteSetting.findMany({
+      where: {
+        key: { in: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from", "smtp_secure"] },
+      },
+    });
+
+    const map = new Map(settings.map((s) => [s.key, s.value]));
+    const host = map.get("smtp_host") || process.env.SMTP_HOST || "";
+    const port = Number(map.get("smtp_port") || process.env.SMTP_PORT || 587);
+    const user = map.get("smtp_user") || process.env.SMTP_USER || "";
+    const pass = map.get("smtp_pass") || process.env.SMTP_PASS || "";
+    const from = map.get("smtp_from") || process.env.SMTP_FROM || user || "";
+    const secure = map.get("smtp_secure") === "true" || process.env.SMTP_SECURE === "true";
+
+    if (!host || !user || !pass) {
+      return {
+        success: false,
+        message:
+          "SMTP configuration incomplete. Host, User, and App Password are all required. Please fill in the SMTP Email Server Settings form and save first.",
+      };
+    }
+
+    const nodemailer = (await import("nodemailer")).default;
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+    });
+
+    // Verify connection first
+    await transporter.verify();
+
+    const fromAddress = from.includes("<") ? from : `Nirapode Alerts <${from}>`;
+    await transporter.sendMail({
+      from: fromAddress,
+      to: testEmail,
+      subject: "✅ Nirapode Test Alert: SMTP is Working!",
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
+          <h2 style="color:#4f46e5;margin-top:0;">✅ SMTP Connection Successful!</h2>
+          <p style="color:#374151;font-size:14px;line-height:1.6;">
+            Hello Admin,<br/><br/>
+            This email confirms that your Nirapode SMTP server configuration is working perfectly!
+          </p>
+          <div style="background:#f3f4f6;padding:12px 16px;border-radius:8px;font-size:13px;color:#4b5563;margin:16px 0;">
+            <strong>Host:</strong> ${host}<br/>
+            <strong>Port:</strong> ${port}<br/>
+            <strong>User:</strong> ${user}<br/>
+            <strong>Secure (SSL):</strong> ${secure ? "Yes" : "No (TLS)"}
+          </div>
+          <p style="color:#6b7280;font-size:12px;margin-bottom:0;">
+            Sent automatically from Nirapode Admin Panel.
+          </p>
+        </div>
+      `,
+    });
+
+    return {
+      success: true,
+      message: `Test email sent successfully to ${testEmail}! Please check your Inbox (and Spam/Junk folder).`,
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return {
+      success: false,
+      message: errorMsg.includes("Invalid login") || errorMsg.includes("Username and Password not accepted")
+        ? `Authentication failed: ${errorMsg}. Make sure you are using a 16-character Google App Password (not your regular Gmail password), and that 2-Step Verification is active on your Google account.`
+        : errorMsg,
+    };
+  }
+}
+
 export async function getWhatsAppApiSettings() {
   try {
     const settings = await prisma.siteSetting.findMany({
