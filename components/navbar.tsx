@@ -487,9 +487,9 @@ export function Navbar({
 	return (
 		<header className="sticky top-0 z-50 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-b border-border">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between h-14 lg:h-16">
+				<div className="flex items-center justify-between h-16 lg:h-18">
 					{/* Logo */}
-					<Link href="/" className="shrink-0 flex items-center">
+					<Link href="/" className="shrink-0 flex items-center py-1">
 						<Logo size="md" />
 					</Link>
 
