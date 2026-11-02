@@ -639,29 +639,55 @@ export async function testSmtpEmailAction(testEmail: string): Promise<{ success:
     // Verify connection first
     await transporter.verify();
 
+    const { renderBrandEmail } = await import("@/lib/email-template");
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL ?? "https://nirapode.com").replace(/\/+$/, "");
+
+    const bodyHtml = `
+      <p style="margin: 0 0 16px; font-size: 15px; color: #334155; line-height: 1.6;">
+        Hello Admin,<br/><br/>
+        This test email confirms that your Nirapode SMTP server configuration is working perfectly! All system alerts, user confirmations, and verification OTPs will be delivered seamlessly.
+      </p>
+
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin: 20px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 8px 0; font-size: 13px; color: #64748b; font-weight: 500;">SMTP Host</td>
+            <td style="padding: 8px 0; font-size: 13px; color: #0f172a; font-weight: 700; text-align: right;">${host}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 8px 0; font-size: 13px; color: #64748b; font-weight: 500;">Port</td>
+            <td style="padding: 8px 0; font-size: 13px; color: #0f172a; font-weight: 700; text-align: right;">${port}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 8px 0; font-size: 13px; color: #64748b; font-weight: 500;">User</td>
+            <td style="padding: 8px 0; font-size: 13px; color: #0f172a; font-weight: 700; text-align: right;">${user}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-size: 13px; color: #64748b; font-weight: 500;">Security Protocol</td>
+            <td style="padding: 8px 0; font-size: 13px; color: #10b981; font-weight: 700; text-align: right;">${secure ? "SSL Encrypted (Port 465)" : "TLS / STARTTLS (Port 587)"}</td>
+          </tr>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+        Sent automatically from Nirapode Admin Diagnostics.
+      </p>
+    `;
+
+    const html = await renderBrandEmail({
+      title: "✅ SMTP Email Server Connected Successfully",
+      badge: "Diagnostics",
+      bodyHtml,
+      actionUrl: `${baseUrl}/admin/settings#notifications`,
+      actionText: "Manage SMTP Settings",
+      preheader: "Nirapode SMTP Server Test: Connection Successful!",
+    });
+
     const fromAddress = from.includes("<") ? from : `Nirapode Alerts <${from}>`;
     await transporter.sendMail({
       from: fromAddress,
       to: testEmail,
       subject: "✅ Nirapode Test Alert: SMTP is Working!",
-      html: `
-        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
-          <h2 style="color:#4f46e5;margin-top:0;">✅ SMTP Connection Successful!</h2>
-          <p style="color:#374151;font-size:14px;line-height:1.6;">
-            Hello Admin,<br/><br/>
-            This email confirms that your Nirapode SMTP server configuration is working perfectly!
-          </p>
-          <div style="background:#f3f4f6;padding:12px 16px;border-radius:8px;font-size:13px;color:#4b5563;margin:16px 0;">
-            <strong>Host:</strong> ${host}<br/>
-            <strong>Port:</strong> ${port}<br/>
-            <strong>User:</strong> ${user}<br/>
-            <strong>Secure (SSL):</strong> ${secure ? "Yes" : "No (TLS)"}
-          </div>
-          <p style="color:#6b7280;font-size:12px;margin-bottom:0;">
-            Sent automatically from Nirapode Admin Panel.
-          </p>
-        </div>
-      `,
+      html,
     });
 
     return {

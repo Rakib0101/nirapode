@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp-server";
 import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE } from "@/lib/timezones";
+import { renderBrandEmail } from "@/lib/email-template";
 
 type ReminderWithUser = {
   id: string;
@@ -32,21 +33,40 @@ export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waS
 
   if ((reminder.channel === "GMAIL" || reminder.channel === "BOTH") && reminder.user.email) {
     try {
+      const bodyHtml = `
+        <p style="margin: 0 0 16px; font-size: 15px; color: #334155; line-height: 1.6;">
+          Hello <strong>${reminder.user.fullName}</strong>, this is your scheduled Nirapode alarm reminder:
+        </p>
+
+        <div style="background-color: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
+          <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 6px;">
+            ${note}
+          </p>
+          ${
+            when
+              ? `<p style="font-size: 12px; color: #64748b; margin: 6px 0 0;">⏰ <strong>Scheduled Time:</strong> ${when}</p>`
+              : ""
+          }
+        </div>
+
+        <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+          You configured this automated notification in your Nirapode Alarm & Reminders center.
+        </p>
+      `;
+
+      const html = await renderBrandEmail({
+        title: `Alarm Reminder (Slot #${reminder.slotIndex})`,
+        badge: "Reminder",
+        bodyHtml,
+        actionUrl: `${(process.env.NEXT_PUBLIC_BASE_URL ?? "https://nirapode.com").replace(/\/+$/, "")}/reminders`,
+        actionText: "Manage My Reminders",
+        preheader: `Reminder: ${note}`,
+      });
+
       await sendEmail(
         reminder.user.email,
         `🔔 Nirapode Reminder: Slot #${reminder.slotIndex}`,
-        `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <h2 style="color: #7c3aed;">🔔 Nirapode Alarm Reminder</h2>
-            <p>Hello <strong>${reminder.user.fullName}</strong>,</p>
-            <p>This is your scheduled alarm reminder:</p>
-            <div style="background: #f8fafc; padding: 16px; border-left: 4px solid #7c3aed; margin: 16px 0; border-radius: 4px;">
-              <p style="font-size: 16px; margin: 0; color: #1e293b;"><strong>${note}</strong></p>
-              ${when ? `<p style="font-size: 12px; color: #64748b; margin-top: 8px;">Scheduled for: ${when}</p>` : ""}
-            </div>
-            <p style="font-size: 12px; color: #94a3b8;">Nirapode Platform Services</p>
-          </div>
-        `
+        html
       );
     } catch (err) {
       console.error(`[reminders] email failed for ${reminder.id}:`, err);

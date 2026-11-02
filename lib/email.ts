@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
+import { renderBrandEmail } from "@/lib/email-template";
 
 async function getEmailConfig() {
   try {
@@ -70,54 +71,44 @@ export async function sendOTPEmail(
       ? "Reset your Nirapode PIN"
       : "Reset your password";
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
-      <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 16px;">
-          <tr>
-            <td align="center">
-              <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                <tr>
-                  <td style="background:#7c3aed;padding:28px 32px;text-align:center;">
-                    <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">
-                      Nirapode
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:32px;">
-                    <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#18181b;">
-                      ${isVerification ? "Welcome to Nirapode!" : isResetPin ? "PIN Reset Request" : "Password Reset Request"}
-                    </p>
-                    <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.5;">
-                      ${isVerification
-                        ? "Please use the verification code below to confirm your email address. This code expires in 10 minutes."
-                        : isResetPin
-                          ? "We received a request to reset your 4-digit app-lock PIN. Use the code below to proceed. This code expires in 10 minutes."
-                          : "We received a request to reset your password. Use the code below to proceed. This code expires in 10 minutes."}
-                    </p>
-                    <div style="background:#f4f4f5;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
-                      <span style="font-family:monospace;font-size:36px;font-weight:700;letter-spacing:8px;color:#047857;">
-                        ${otp}
-                      </span>
-                    </div>
-                    <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.5;">
-                      If you did not request this, you can safely ignore this email.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-    </html>
+  const badge = isVerification ? "Account Security" : isResetPin ? "PIN Reset" : "Password Reset";
+  const title = isVerification
+    ? "Welcome to Nirapode!"
+    : isResetPin
+    ? "Reset Your 4-Digit Security PIN"
+    : "Reset Your Account Password";
+
+  const description = isVerification
+    ? "Thank you for joining Nirapode. Please use the one-time verification code below to verify your email address. This code expires in 10 minutes."
+    : isResetPin
+    ? "We received a request to reset your 4-digit security app-lock PIN. Use the verification code below to complete the reset. This code expires in 10 minutes."
+    : "We received a request to reset your account password. Use the verification code below to set a new password. This code expires in 10 minutes.";
+
+  const bodyHtml = `
+    <p style="margin: 0 0 16px; font-size: 15px; color: #334155; line-height: 1.6;">
+      ${description}
+    </p>
+
+    <div style="background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 22px; text-align: center; margin: 24px 0;">
+      <span style="display: block; font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 1.5px; margin-bottom: 8px;">
+        Your One-Time Code
+      </span>
+      <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 10px; color: #4f46e5; text-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        ${otp}
+      </span>
+    </div>
+
+    <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+      🔒 <strong>Security Notice:</strong> Never share this code with anyone, including Nirapode support staff. If you did not make this request, you can safely ignore this email.
+    </p>
   `;
+
+  const html = await renderBrandEmail({
+    title,
+    badge,
+    bodyHtml,
+    preheader: `Your Nirapode verification code is ${otp}`,
+  });
 
   await sendEmail(email, subject, html);
 }

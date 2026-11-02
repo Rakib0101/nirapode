@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp-server";
+import { renderBrandEmail } from "@/lib/email-template";
 
 const ADMIN_EMAIL_KEY = "admin_notification_email";
 const ADMIN_PHONE_KEY = "admin_notification_phone";
@@ -119,7 +120,7 @@ export async function notifyAdmin(opts: {
   actionLabel?: string;
   module?: NotifyModule;
 }): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL ?? "https://nirapode.com").replace(/\/+$/, "");
 
   try {
     const to = await getAdminNotificationEmail(opts.module);
@@ -127,21 +128,34 @@ export async function notifyAdmin(opts: {
       const rows = opts.lines
         .map(
           (l) =>
-            `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;">${l.label}</td><td style="padding:4px 0;font-size:13px;color:#111827;font-weight:600;text-align:right;">${l.value}</td></tr>`
+            `<tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 10px 0; font-size: 13px; color: #64748b; font-weight: 500;">${l.label}</td>
+              <td style="padding: 10px 0; font-size: 13px; color: #0f172a; font-weight: 700; text-align: right;">${l.value}</td>
+            </tr>`
         )
         .join("");
 
-      const body = `
-        <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#111827;">${opts.heading}</p>
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">${rows}</table>
-        ${
-          opts.actionPath
-            ? `<a href="${baseUrl}${opts.actionPath}" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;text-decoration:none;">${opts.actionLabel ?? "View in Admin Panel"}</a>`
-            : ""
-        }
+      const bodyHtml = `
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="table-layout: auto;">
+            ${rows}
+          </table>
+        </div>
+        <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+          This notification was triggered automatically by a user action on the Nirapode platform.
+        </p>
       `;
 
-      await sendEmail(to, opts.subject, wrapEmail("New Activity", body));
+      const fullHtml = await renderBrandEmail({
+        title: opts.heading,
+        badge: "Admin Alert",
+        bodyHtml,
+        actionUrl: opts.actionPath ? `${baseUrl}${opts.actionPath}` : undefined,
+        actionText: opts.actionLabel ?? "Open in Admin Panel",
+        preheader: `Admin Notification: ${opts.heading}`,
+      });
+
+      await sendEmail(to, opts.subject, fullHtml);
     }
   } catch (err) {
     console.error("[notifyAdmin] failed to send notification email:", err);
@@ -177,16 +191,35 @@ export async function notifyUser(opts: {
     const rows = (opts.lines ?? [])
       .map(
         (l) =>
-          `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;">${l.label}</td><td style="padding:4px 0;font-size:13px;color:#111827;font-weight:600;text-align:right;">${l.value}</td></tr>`
+          `<tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; font-size: 13px; color: #64748b; font-weight: 500;">${l.label}</td>
+            <td style="padding: 10px 0; font-size: 13px; color: #0f172a; font-weight: 700; text-align: right;">${l.value}</td>
+          </tr>`
       )
       .join("");
 
-    const body = `
-      <p style="margin:0 0 16px;font-size:14px;color:#111827;line-height:1.6;">${opts.message}</p>
-      ${rows ? `<table width="100%" cellpadding="0" cellspacing="0">${rows}</table>` : ""}
+    const bodyHtml = `
+      <p style="margin: 0 0 16px; font-size: 15px; color: #334155; line-height: 1.6;">${opts.message}</p>
+      ${
+        rows
+          ? `<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin: 20px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+            </div>`
+          : ""
+      }
+      <p style="margin: 16px 0 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+        You can view your full transaction history and wallet status anytime in your dashboard.
+      </p>
     `;
 
-    await sendEmail(opts.to, opts.subject, wrapEmail(opts.heading, body));
+    const fullHtml = await renderBrandEmail({
+      title: opts.heading,
+      badge: "Confirmation",
+      bodyHtml,
+      preheader: opts.heading,
+    });
+
+    await sendEmail(opts.to, opts.subject, fullHtml);
   } catch (err) {
     console.error("[notifyUser] failed to send notification email:", err);
   }
