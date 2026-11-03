@@ -67,6 +67,16 @@ export async function requestWithdrawalAction(
     actionPath: "/admin/withdrawals",
   });
 
+  await prisma.notification.create({
+    data: {
+      userId: session.userId,
+      title: "Withdrawal request submitted",
+      message: `Your withdrawal request of ৳${amount.toFixed(2)} has been submitted and is pending admin review.`,
+      type: "WALLET",
+    },
+  });
+
   revalidatePath("/wallet");
+  revalidatePath("/dashboard");
   return { success: true };
 }

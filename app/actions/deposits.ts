@@ -67,6 +67,15 @@ export async function requestDepositAction(
     actionPath: "/admin/deposits",
   });
 
+  await prisma.notification.create({
+    data: {
+      userId: session.userId,
+      title: "Deposit request submitted",
+      message: `Your deposit request of ৳${amount.toFixed(2)} has been submitted and is pending admin review.`,
+      type: "WALLET",
+    },
+  });
+
   revalidatePath("/dashboard");
   return { success: true };
 }

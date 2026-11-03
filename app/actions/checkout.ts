@@ -326,6 +326,16 @@ export async function submitCheckoutPaymentAction(
     actionPath: "/admin/checkouts",
   });
 
+  await prisma.notification.create({
+    data: {
+      userId: checkout.userId,
+      title: "Payment proof submitted",
+      message: `Your payment proof of ৳${Number(checkout.totalAmount).toFixed(2)} has been submitted and is pending admin review.`,
+      type: "SYSTEM",
+    },
+  });
+
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
