@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCommissionSetting, computeCommissionAmount, getShare4AdminCutPercent } from "@/lib/commission";
-import { getShareAdminCutPercent } from "@/lib/commission";
+import { getCommissionSetting, computeCommissionAmount, getPlatformCutSetting } from "@/lib/commission";
 import { getShareSgdRate } from "@/lib/share-pricing";
 import { ProcessPurchaseForm } from "./process-form";
 import { ScreenshotViewerModal } from "@/components/screenshot-modal";
@@ -45,14 +44,14 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default async function AdminPurchasesPage() {
-  const [requests, shareCommission, adminCutPercent, pendingBuyRequests, share4Rate, share4Commission, share4AdminCutPercent] = await Promise.all([
+  const [requests, shareCommission, platformCut, pendingBuyRequests, share4Rate, share4Commission, share4PlatformCut] = await Promise.all([
     getPurchaseRequests(),
     getCommissionSetting("SHARE"),
-    getShareAdminCutPercent(),
+    getPlatformCutSetting("SHARE"),
     getPendingBuyRequests(),
     getShareSgdRate(),
     getCommissionSetting("SHARE_BUY_REQUEST"),
-    getShare4AdminCutPercent(),
+    getPlatformCutSetting("SHARE_BUY_REQUEST"),
   ]);
   const pending = requests.filter((r) => r.status === "PENDING");
 
@@ -100,10 +99,10 @@ export default async function AdminPurchasesPage() {
                       ) : (
                         <span className="text-muted-foreground">No referring agent</span>
                       )}
-                      {share4AdminCutPercent > 0 && (
+                      {computeCommissionAmount(share4PlatformCut, Number(r.price)) > 0 && (
                         <span className="text-foreground">
-                          {" · "}Platform: <strong>৳{(Number(r.price) * (share4AdminCutPercent / 100)).toFixed(2)}</strong>
-                          <span className="text-muted-foreground"> ({share4AdminCutPercent}%)</span>
+                          {" · "}Platform: <strong>৳{computeCommissionAmount(share4PlatformCut, Number(r.price)).toFixed(2)}</strong>
+                          <span className="text-muted-foreground"> ({share4PlatformCut.mode === "PERCENTAGE" ? `${share4PlatformCut.value}%` : `flat ৳${share4PlatformCut.value}`})</span>
                         </span>
                       )}
                     </p>
@@ -167,8 +166,8 @@ export default async function AdminPurchasesPage() {
                       <p className="text-muted-foreground">No referring agent</p>
                     )}
                     <p className="text-foreground mt-1">
-                      Platform: <span className="font-semibold">৳{(Number(r.totalAmount) * (adminCutPercent / 100)).toFixed(2)}</span>
-                      <span className="text-muted-foreground"> ({adminCutPercent}%)</span>
+                      Platform: <span className="font-semibold">৳{computeCommissionAmount(platformCut, Number(r.totalAmount)).toFixed(2)}</span>
+                      <span className="text-muted-foreground"> ({platformCut.mode === "PERCENTAGE" ? `${platformCut.value}%` : `flat ৳${platformCut.value}`})</span>
                     </p>
                   </td>
                   <td className="px-4 py-3.5">

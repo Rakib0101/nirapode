@@ -1,5 +1,5 @@
 import { getCurrencySettings, getLiveBdtRate } from "@/lib/currency";
-import { getAllCommissionSettings, getAllPlatformCutSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
+import { getAllCommissionSettings, getAllPlatformCutSettings } from "@/lib/commission";
 import { getPlatformWalletSummary } from "@/lib/platform-wallet";
 import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates } from "@/lib/share-pricing";
 import { getAdminNotificationEmail, getAdminNotificationPhone, getModuleNotificationOverride } from "@/lib/notifications";
@@ -12,7 +12,6 @@ import { CommissionSettingsForm } from "./commission-form";
 import { PlatformCutForm } from "./platform-cut-form";
 import { PlatformWalletSummary } from "./platform-wallet-summary";
 import { SharePricingForm } from "./share-pricing-form";
-import { ShareAdminCutForm } from "./share-admin-cut-form";
 import { Share4AmountsForm } from "./share4-amounts-form";
 import { Share4ClosedDatesForm } from "./share4-closed-dates-form";
 import { NotificationEmailForm } from "./notification-email-form";
@@ -58,8 +57,6 @@ export default async function AdminSettingsPage() {
     platformCutSettings,
     platformWallet,
     shareRate,
-    shareAdminCutPercent,
-    share4AdminCutPercent,
     share4Amounts,
     share4ClosedDates,
     notificationEmail,
@@ -82,8 +79,6 @@ export default async function AdminSettingsPage() {
     getAllPlatformCutSettings(),
     getPlatformWalletSummary(),
     getShareSgdRate(),
-    getShareAdminCutPercent(),
-    getShare4AdminCutPercent(),
     getShare4Amounts(),
     getShare4ClosedDates(),
     getAdminNotificationEmail(),
@@ -226,48 +221,9 @@ export default async function AdminSettingsPage() {
               </div>
             </div>
 
-            {/* Share 6 platform cut */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 6 — Platform Cut</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Platform margin percentage on Share 6 purchases (informational admin tracking)
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 sm:p-7">
-                <ShareAdminCutForm percent={shareAdminCutPercent} variant="share6" />
-              </div>
-            </div>
-
-            {/* Share 4 (buy-request) platform cut */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Share 4 — Platform Cut</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Platform margin percentage on Share 4 buy-requests
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 sm:p-7">
-                <ShareAdminCutForm percent={share4AdminCutPercent} variant="share4" />
-              </div>
+            {/* Pointer — platform cut settings now live in one place, under Agent Commission */}
+            <div className="xl:col-span-2 rounded-2xl border border-dashed border-border px-5 py-3.5 text-xs text-muted-foreground">
+              Looking for the Share 6 / Share 4 platform cut percentage? It moved to the <span className="font-semibold text-foreground">Agent Commission</span> tab, under "Platform Commission (Company Revenue)" — it's now one real, paid-out setting instead of a separate display-only number.
             </div>
 
             {/* Share 4 offer amounts */}

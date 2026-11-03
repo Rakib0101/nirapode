@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCommissionSetting, getShareAdminCutPercent, computeCommissionAmount } from "@/lib/commission";
+import { getCommissionSetting, getPlatformCutSetting, computeCommissionAmount } from "@/lib/commission";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ScreenshotViewer } from "./screenshot-viewer";
@@ -76,10 +76,10 @@ export default async function AdminProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, shareCommission, adminCutPercent] = await Promise.all([
+  const [project, shareCommission, platformCut] = await Promise.all([
     getProjectDetail(id),
     getCommissionSetting("SHARE"),
-    getShareAdminCutPercent(),
+    getPlatformCutSetting("SHARE"),
   ]);
   if (!project) notFound();
 
@@ -300,8 +300,8 @@ export default async function AdminProjectDetailPage({
                         <p className="text-muted-foreground">No referring agent</p>
                       )}
                       <p className="text-foreground mt-1">
-                        Platform: <span className="font-semibold">৳{(Number(r.totalAmount) * (adminCutPercent / 100)).toFixed(2)}</span>
-                        <span className="text-muted-foreground"> ({adminCutPercent}%)</span>
+                        Platform: <span className="font-semibold">৳{computeCommissionAmount(platformCut, Number(r.totalAmount)).toFixed(2)}</span>
+                        <span className="text-muted-foreground"> ({platformCut.mode === "PERCENTAGE" ? `${platformCut.value}%` : `flat ৳${platformCut.value}`})</span>
                       </p>
                     </td>
                     <td className="px-4 py-3">

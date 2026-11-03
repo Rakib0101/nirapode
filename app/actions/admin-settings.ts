@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { COMMISSION_MODULES, saveCommissionSetting, savePlatformCutSetting, saveShareAdminCutPercent, saveShare4AdminCutPercent, type CommissionMode } from "@/lib/commission";
+import { COMMISSION_MODULES, saveCommissionSetting, savePlatformCutSetting, type CommissionMode } from "@/lib/commission";
 import { saveShareSgdRate, saveShare4Amounts, saveShare4ClosedDates } from "@/lib/share-pricing";
 import { saveAdminNotificationEmail, saveAdminNotificationPhone, type NotifyModule } from "@/lib/notifications";
 import { saveTransferFeeSetting } from "@/lib/wallet";
@@ -147,47 +147,6 @@ export async function savePlatformCutSettingsAction(_prev: State, formData: Form
   await Promise.all(parsed.map((p) => savePlatformCutSetting(p.module, p.mode, p.value)));
 
   revalidatePath("/admin/settings");
-  return { success: true };
-}
-
-// ── Share purchase platform cut (informational — never paid out) ─────────────
-
-export async function saveShareAdminCutAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
-    return { error: "Unauthorized." };
-  }
-
-  const value = parseFloat(formData.get("percent") as string);
-  if (isNaN(value) || value < 0 || value > 100) {
-    return { error: "Enter a valid percentage between 0 and 100." };
-  }
-
-  await saveShareAdminCutPercent(value);
-
-  revalidatePath("/admin/settings");
-  revalidatePath("/admin/purchases");
-  revalidatePath("/admin/shares");
-  return { success: true };
-}
-
-// ── Share 4 (buy-request) platform cut (informational — never paid out) ──────
-
-export async function saveShare4AdminCutAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
-    return { error: "Unauthorized." };
-  }
-
-  const value = parseFloat(formData.get("percent") as string);
-  if (isNaN(value) || value < 0 || value > 100) {
-    return { error: "Enter a valid percentage between 0 and 100." };
-  }
-
-  await saveShare4AdminCutPercent(value);
-
-  revalidatePath("/admin/settings");
-  revalidatePath("/admin/shares");
   return { success: true };
 }
 

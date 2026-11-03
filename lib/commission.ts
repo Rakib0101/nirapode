@@ -51,37 +51,16 @@ export async function saveCommissionSetting(module: CommissionModule, mode: Comm
   ]);
 }
 
-// Share purchases only: a separate, purely informational "platform cut"
-// percentage — shown to admins alongside the agent's commission so they can
-// see both sides of the split, e.g. agent 5% / platform 15%. Never paid out
-// to a wallet, just reported (the money was always the platform's; this only
-// makes it visible).
-const SHARE_ADMIN_CUT_KEY = "share_admin_cut_percent";
-const SHARE_ADMIN_CUT_DEFAULT = 15;
-
-export async function getShareAdminCutPercent(): Promise<number> {
-  try {
-    const row = await prisma.siteSetting.findUnique({ where: { key: SHARE_ADMIN_CUT_KEY } });
-    const value = row ? parseFloat(row.value) : NaN;
-    return isNaN(value) ? SHARE_ADMIN_CUT_DEFAULT : value;
-  } catch {
-    return SHARE_ADMIN_CUT_DEFAULT;
-  }
-}
-
-export async function saveShareAdminCutPercent(value: number): Promise<void> {
-  await prisma.siteSetting.upsert({
-    where: { key: SHARE_ADMIN_CUT_KEY },
-    create: { key: SHARE_ADMIN_CUT_KEY, value: String(value) },
-    update: { value: String(value) },
-  });
-}
-
-// Real, paid platform commission — tracked per module just like the agent's
-// own commission above, and credited to the shared PlatformWallet
-// (lib/platform-wallet.ts) whenever the agent's cut is. Free/0% by default
-// across every module — admin opts in per module so the platform's own
-// commission is only ever tracked on sales they've deliberately configured.
+// Platform's own commission — tracked per module just like the agent's cut
+// above, and credited to the shared PlatformWallet (lib/platform-wallet.ts)
+// whenever the agent's cut is. Free/0% by default across every module —
+// admin opts in per module so the platform's own commission is only ever
+// tracked on sales they've deliberately configured. This is the single,
+// real source of truth for "the platform's cut" on every module including
+// Share and Share 4 — there used to be a separate, purely informational
+// share/share4 admin-cut percent shown next to purchase requests, but that
+// could silently drift from this real figure, so it was merged into this
+// one setting instead.
 const PLATFORM_CUT_DEFAULTS: Record<CommissionModule, CommissionSetting> = {
   TAXI: { mode: "PERCENTAGE", value: 0 },
   AIR_TICKET: { mode: "PERCENTAGE", value: 0 },
@@ -121,30 +100,6 @@ export async function savePlatformCutSetting(module: CommissionModule, mode: Com
     prisma.siteSetting.upsert({ where: { key: modeKey }, create: { key: modeKey, value: mode }, update: { value: mode } }),
     prisma.siteSetting.upsert({ where: { key: valueKey }, create: { key: valueKey, value: String(value) }, update: { value: String(value) } }),
   ]);
-}
-
-// Same idea as SHARE_ADMIN_CUT_KEY above, but for Share 4 (buy-request) —
-// tracked separately since admin may want a different platform cut (or none)
-// for this simpler, non-marketplace flow. Also purely informational.
-const SHARE4_ADMIN_CUT_KEY = "share4_admin_cut_percent";
-const SHARE4_ADMIN_CUT_DEFAULT = 0;
-
-export async function getShare4AdminCutPercent(): Promise<number> {
-  try {
-    const row = await prisma.siteSetting.findUnique({ where: { key: SHARE4_ADMIN_CUT_KEY } });
-    const value = row ? parseFloat(row.value) : NaN;
-    return isNaN(value) ? SHARE4_ADMIN_CUT_DEFAULT : value;
-  } catch {
-    return SHARE4_ADMIN_CUT_DEFAULT;
-  }
-}
-
-export async function saveShare4AdminCutPercent(value: number): Promise<void> {
-  await prisma.siteSetting.upsert({
-    where: { key: SHARE4_ADMIN_CUT_KEY },
-    create: { key: SHARE4_ADMIN_CUT_KEY, value: String(value) },
-    update: { value: String(value) },
-  });
 }
 
 // Pure calculation shared between the actual crediting logic below and the
