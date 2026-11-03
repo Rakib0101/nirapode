@@ -1,5 +1,6 @@
 import { getCurrencySettings, getLiveBdtRate } from "@/lib/currency";
-import { getAllCommissionSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
+import { getAllCommissionSettings, getAllPlatformCutSettings, getShareAdminCutPercent, getShare4AdminCutPercent } from "@/lib/commission";
+import { getPlatformWalletSummary } from "@/lib/platform-wallet";
 import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates } from "@/lib/share-pricing";
 import { getAdminNotificationEmail, getAdminNotificationPhone, getModuleNotificationOverride } from "@/lib/notifications";
 import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings, getPinAuthSettings } from "@/app/actions/admin-settings";
@@ -8,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { CurrencySettingsForm } from "./currency-form";
 import { BankRatesForm } from "./bank-rates-form";
 import { CommissionSettingsForm } from "./commission-form";
+import { PlatformCutForm } from "./platform-cut-form";
+import { PlatformWalletSummary } from "./platform-wallet-summary";
 import { SharePricingForm } from "./share-pricing-form";
 import { ShareAdminCutForm } from "./share-admin-cut-form";
 import { Share4AmountsForm } from "./share4-amounts-form";
@@ -52,6 +55,8 @@ export default async function AdminSettingsPage() {
     banks,
     paymentAccounts,
     commissionSettings,
+    platformCutSettings,
+    platformWallet,
     shareRate,
     shareAdminCutPercent,
     share4AdminCutPercent,
@@ -74,6 +79,8 @@ export default async function AdminSettingsPage() {
     getBankRates(),
     getPaymentAccounts(),
     getAllCommissionSettings(),
+    getAllPlatformCutSettings(),
+    getPlatformWalletSummary(),
     getShareSgdRate(),
     getShareAdminCutPercent(),
     getShare4AdminCutPercent(),
@@ -455,6 +462,29 @@ export default async function AdminSettingsPage() {
               </div>
               <div className="p-5 sm:p-7">
                 <CommissionSettingsForm settings={commissionSettings} />
+              </div>
+            </div>
+
+            {/* Platform's own commission — tracked separately in the shared Platform Wallet */}
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs mt-6">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 10a2 2 0 012-2h14a2 2 0 012 2M3 10v8a2 2 0 002 2h14a2 2 0 002-2v-8m-9 4h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Platform Commission (Company Revenue)</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Tracked only on sales referred by an agent, alongside the agent&apos;s own commission. Credited to a shared Platform Wallet so it can be tracked independently of any one admin&apos;s login.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 sm:p-7 space-y-6">
+                <PlatformWalletSummary balance={platformWallet.balance} transactions={platformWallet.transactions} />
+                <PlatformCutForm settings={platformCutSettings} />
               </div>
             </div>
           </div>

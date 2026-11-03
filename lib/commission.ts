@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { COMMISSION_MODULES, type CommissionModule, type CommissionMode, type CommissionSetting } from "@/lib/commission-types";
+import { creditPlatformWallet } from "@/lib/platform-wallet";
 
 export type { CommissionModule, CommissionMode, CommissionSetting } from "@/lib/commission-types";
 export { COMMISSION_MODULES } from "@/lib/commission-types";
@@ -76,6 +77,52 @@ export async function saveShareAdminCutPercent(value: number): Promise<void> {
   });
 }
 
+// Real, paid platform commission — tracked per module just like the agent's
+// own commission above, and credited to the shared PlatformWallet
+// (lib/platform-wallet.ts) whenever the agent's cut is. Free/0% by default
+// across every module — admin opts in per module so the platform's own
+// commission is only ever tracked on sales they've deliberately configured.
+const PLATFORM_CUT_DEFAULTS: Record<CommissionModule, CommissionSetting> = {
+  TAXI: { mode: "PERCENTAGE", value: 0 },
+  AIR_TICKET: { mode: "PERCENTAGE", value: 0 },
+  SERVICE: { mode: "PERCENTAGE", value: 0 },
+  SHARE: { mode: "PERCENTAGE", value: 0 },
+  SHARE_BUY_REQUEST: { mode: "PERCENTAGE", value: 0 },
+};
+
+function platformCutSettingKeys(module: CommissionModule) {
+  const key = module.toLowerCase();
+  return { modeKey: `platform_cut_${key}_mode`, valueKey: `platform_cut_${key}_value` };
+}
+
+export async function getPlatformCutSetting(module: CommissionModule): Promise<CommissionSetting> {
+  try {
+    const { modeKey, valueKey } = platformCutSettingKeys(module);
+    const rows = await prisma.siteSetting.findMany({ where: { key: { in: [modeKey, valueKey] } } });
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const mode = map[modeKey] === "FIXED" ? "FIXED" : map[modeKey] === "PERCENTAGE" ? "PERCENTAGE" : PLATFORM_CUT_DEFAULTS[module].mode;
+    const value = map[valueKey] !== undefined ? parseFloat(map[valueKey]) : PLATFORM_CUT_DEFAULTS[module].value;
+    return { mode, value: isNaN(value) ? PLATFORM_CUT_DEFAULTS[module].value : value };
+  } catch {
+    return PLATFORM_CUT_DEFAULTS[module];
+  }
+}
+
+export async function getAllPlatformCutSettings(): Promise<Record<CommissionModule, CommissionSetting>> {
+  const entries = await Promise.all(
+    COMMISSION_MODULES.map(async ({ module }) => [module, await getPlatformCutSetting(module)] as const)
+  );
+  return Object.fromEntries(entries) as Record<CommissionModule, CommissionSetting>;
+}
+
+export async function savePlatformCutSetting(module: CommissionModule, mode: CommissionMode, value: number): Promise<void> {
+  const { modeKey, valueKey } = platformCutSettingKeys(module);
+  await prisma.$transaction([
+    prisma.siteSetting.upsert({ where: { key: modeKey }, create: { key: modeKey, value: mode }, update: { value: mode } }),
+    prisma.siteSetting.upsert({ where: { key: valueKey }, create: { key: valueKey, value: String(value) }, update: { value: String(value) } }),
+  ]);
+}
+
 // Same idea as SHARE_ADMIN_CUT_KEY above, but for Share 4 (buy-request) —
 // tracked separately since admin may want a different platform cut (or none)
 // for this simpler, non-marketplace flow. Also purely informational.
@@ -116,33 +163,42 @@ export async function creditCommission(
 
   const setting = await getCommissionSetting(module);
   const commissionAmount = computeCommissionAmount(setting, amount);
-  if (commissionAmount <= 0) return;
 
-  const wallet = await tx.wallet.findUnique({ where: { userId: referredById } });
-  if (!wallet) return;
+  if (commissionAmount > 0) {
+    const wallet = await tx.wallet.findUnique({ where: { userId: referredById } });
+    if (wallet) {
+      const newBalance = Number(wallet.balance) + commissionAmount;
+      await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
 
-  const newBalance = Number(wallet.balance) + commissionAmount;
-  await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: "COMMISSION",
+          amount: commissionAmount,
+          description,
+          balanceBefore: wallet.balance,
+          balanceAfter: newBalance,
+        },
+      });
 
-  await tx.walletTransaction.create({
-    data: {
-      walletId: wallet.id,
-      type: "COMMISSION",
-      amount: commissionAmount,
-      description,
-      balanceBefore: wallet.balance,
-      balanceAfter: newBalance,
-    },
-  });
+      await tx.notification.create({
+        data: {
+          userId: referredById,
+          title: "Referral commission earned",
+          message: `You earned ৳${commissionAmount.toFixed(2)} commission — ${description}.`,
+          type: "WALLET",
+        },
+      });
+    }
+  }
 
-  await tx.notification.create({
-    data: {
-      userId: referredById,
-      title: "Referral commission earned",
-      message: `You earned ৳${commissionAmount.toFixed(2)} commission — ${description}.`,
-      type: "WALLET",
-    },
-  });
+  // Platform's own cut on this same referred sale — tracked independently of
+  // the agent's cut above, so it still records even if the agent's rate is 0%.
+  const platformSetting = await getPlatformCutSetting(module);
+  const platformAmount = computeCommissionAmount(platformSetting, amount);
+  if (platformAmount > 0) {
+    await creditPlatformWallet(tx, { amount: platformAmount, description: `Platform commission — ${description}` });
+  }
 }
 
 // Reads the buyer's own persistent referrer, set once at signup/login via

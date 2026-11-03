@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { COMMISSION_MODULES, saveCommissionSetting, saveShareAdminCutPercent, saveShare4AdminCutPercent, type CommissionMode } from "@/lib/commission";
+import { COMMISSION_MODULES, saveCommissionSetting, savePlatformCutSetting, saveShareAdminCutPercent, saveShare4AdminCutPercent, type CommissionMode } from "@/lib/commission";
 import { saveShareSgdRate, saveShare4Amounts, saveShare4ClosedDates } from "@/lib/share-pricing";
 import { saveAdminNotificationEmail, saveAdminNotificationPhone, type NotifyModule } from "@/lib/notifications";
 import { saveTransferFeeSetting } from "@/lib/wallet";
@@ -111,6 +111,40 @@ export async function saveCommissionSettingsAction(_prev: State, formData: FormD
   }
 
   await Promise.all(parsed.map((p) => saveCommissionSetting(p.module, p.mode, p.value)));
+
+  revalidatePath("/admin/settings");
+  return { success: true };
+}
+
+// ── Platform commission rates (real, paid into the shared Platform Wallet) ───
+
+export async function savePlatformCutSettingsAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  const parsed: { module: (typeof COMMISSION_MODULES)[number]["module"]; mode: CommissionMode; value: number }[] = [];
+
+  for (const { module, label } of COMMISSION_MODULES) {
+    const key = module.toLowerCase();
+    const mode = formData.get(`platform_${key}_mode`) as string;
+    const value = parseFloat(formData.get(`platform_${key}_value`) as string);
+
+    if (mode !== "PERCENTAGE" && mode !== "FIXED") {
+      return { error: `Invalid platform cut mode for ${label}.` };
+    }
+    if (isNaN(value) || value < 0) {
+      return { error: `Enter a valid ${label} platform cut value.` };
+    }
+    if (mode === "PERCENTAGE" && value > 100) {
+      return { error: `${label} percentage can't exceed 100.` };
+    }
+
+    parsed.push({ module, mode, value });
+  }
+
+  await Promise.all(parsed.map((p) => savePlatformCutSetting(p.module, p.mode, p.value)));
 
   revalidatePath("/admin/settings");
   return { success: true };

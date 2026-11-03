@@ -444,6 +444,35 @@ model WalletTransaction {
   @@index([walletId])
 }
 
+// Company-wide revenue ledger — a single row (id "platform"), separate from
+// any individual admin's personal Wallet. Credited by creditCommission()
+// alongside the referring agent, using the admin-configured platform-cut
+// rate per module (lib/commission.ts), so admins can track what the
+// platform itself earned without that being tied to one admin's login.
+model PlatformWallet {
+  id        String   @id @default("platform")
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions PlatformWalletTransaction[]
+}
+
+model PlatformWalletTransaction {
+  id            String       @id @default(cuid())
+  walletId      String
+  type          WalletTxType
+  amount        Decimal      @db.Decimal(12, 2)
+  description   String
+  balanceBefore Decimal      @db.Decimal(12, 2)
+  balanceAfter  Decimal      @db.Decimal(12, 2)
+  createdAt     DateTime     @default(now())
+
+  wallet PlatformWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+}
+
 model DepositRequest {
   id            String        @id @default(cuid())
   userId        String
