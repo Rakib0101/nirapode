@@ -31,7 +31,7 @@ function mobileApiCorsHeaders(): HeadersInit {
   };
 }
 
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/mobile/")) {
     if (request.method === "OPTIONS") {
       return new NextResponse(null, { status: 204, headers: mobileApiCorsHeaders() });
