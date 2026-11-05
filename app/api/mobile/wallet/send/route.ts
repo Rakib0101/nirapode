@@ -18,6 +18,25 @@ const transferSchema = z.object({
   password: z.string().min(1, "Enter your password or PIN to confirm"),
 });
 
+// Lets the Send Money screen show a live fee preview before submitting,
+// using the same admin-configured setting computeTransferFee applies server-side.
+export async function GET(req: Request) {
+  try {
+    const session = await getMobileSession(req);
+    if (!session) return unauthorizedJson();
+
+    const [wallet, feeSetting] = await Promise.all([
+      prisma.wallet.findUnique({ where: { userId: session.userId }, select: { balance: true } }),
+      getTransferFeeSetting(),
+    ]);
+
+    return Response.json({ balance: Number(wallet?.balance ?? 0), feeMode: feeSetting.mode, feeValue: feeSetting.value });
+  } catch (err: unknown) {
+    console.error("Mobile send-info error:", err);
+    return Response.json({ error: err instanceof Error ? err.message : "Failed to load wallet info." }, { status: 500 });
+  }
+}
+
 async function findRecipient(identifier: string) {
   const select = { id: true, fullName: true, email: true, phone: true, isActive: true } as const;
   if (identifier.includes("@")) {
