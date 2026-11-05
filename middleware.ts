@@ -16,7 +16,33 @@ const PIN_GATE_EXEMPT = new Set([
   "/reset-password",
 ]);
 
+// The mobile app authenticates with a Bearer token, not cookies, so there's
+// no CSRF/credential exposure from a wide-open origin here — unlike the rest
+// of this file, this is deliberately NOT scoped to a specific origin, since
+// the Expo dev client's origin changes per machine/port and the native app
+// sends no Origin header at all. Handled once here instead of in every route
+// handler under app/api/mobile/**.
+function mobileApiCorsHeaders(): HeadersInit {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
 export default async function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/mobile/")) {
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, { status: 204, headers: mobileApiCorsHeaders() });
+    }
+    const corsResponse = NextResponse.next();
+    for (const [key, value] of Object.entries(mobileApiCorsHeaders())) {
+      corsResponse.headers.set(key, value);
+    }
+    return corsResponse;
+  }
+
   const response = NextResponse.next();
 
   // Capture an agent's referral link (?ref=CODE) on any page. First click
@@ -72,6 +98,10 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Match all paths except: API routes, Next.js internals, static files
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  matcher: [
+    // All paths except: API routes, Next.js internals, static files
+    "/((?!api|_next|_vercel|.*\\..*).*)",
+    // ...except /api/mobile/** specifically, which needs the CORS handling above
+    "/api/mobile/:path*",
+  ],
 };
