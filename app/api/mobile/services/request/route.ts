@@ -13,6 +13,11 @@ const schema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
   phone: z.string().min(6, "Enter a valid phone number"),
   email: z.string().email("Enter a valid email"),
+  passportUrl: z.string().optional(),
+  nidUrl: z.string().optional(),
+  photoUrl: z.string().optional(),
+  workPermitUrl: z.string().optional(),
+  otherUrl: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -21,7 +26,7 @@ export async function POST(req: Request) {
     const parse = schema.safeParse(body);
     if (!parse.success) return Response.json({ error: parse.error.issues[0].message }, { status: 400 });
 
-    const { serviceId, fullName, phone, email } = parse.data;
+    const { serviceId, fullName, phone, email, passportUrl, nidUrl, photoUrl, workPermitUrl, otherUrl } = parse.data;
 
     const service = await prisma.applyService.findUnique({ where: { id: serviceId, isActive: true }, select: { id: true, name: true } });
     if (!service) return Response.json({ error: "Service not found or unavailable." }, { status: 404 });
@@ -30,7 +35,18 @@ export async function POST(req: Request) {
     const referredById = session ? await getReferredByAgentId(session.userId) : null;
 
     await prisma.serviceRequest.create({
-      data: { serviceId, fullName, phone, email, referredById },
+      data: {
+        serviceId,
+        fullName,
+        phone,
+        email,
+        passportUrl: passportUrl ?? null,
+        nidUrl: nidUrl ?? null,
+        photoUrl: photoUrl ?? null,
+        workPermitUrl: workPermitUrl ?? null,
+        otherUrl: otherUrl ?? null,
+        referredById,
+      },
     });
 
     await notifyAdmin({
