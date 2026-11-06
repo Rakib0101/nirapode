@@ -125,14 +125,13 @@ export async function saveReminderAction(formData: FormData) {
     return { error: "Invalid slot." };
   }
 
+  const existing = await prisma.reminder.findUnique({
+    where: { userId_slotIndex: { userId: session.userId, slotIndex } },
+  });
+
   // Ensure slot is unlocked (Slot 1 is always unlocked)
-  if (slotIndex > 1) {
-    const existing = await prisma.reminder.findUnique({
-      where: { userId_slotIndex: { userId: session.userId, slotIndex } },
-    });
-    if (!existing || !existing.isUnlocked) {
-      return { error: `Slot #${slotIndex} is locked. Please unlock it first.` };
-    }
+  if (slotIndex > 1 && (!existing || !existing.isUnlocked)) {
+    return { error: `Slot #${slotIndex} is locked. Please unlock it first.` };
   }
 
   // The date/time inputs are wall-clock in the user's chosen country/timezone
@@ -146,6 +145,16 @@ export async function saveReminderAction(formData: FormData) {
     if (isNaN(remindAt.getTime())) return { error: "Invalid date or time." };
   }
 
+  // Re-saving without changing the target time must not re-send a reminder
+  // that already went out for that exact instant — only a genuinely new/
+  // changed remindAt re-arms it. Without this, tapping Save again (or an
+  // accidental double-submit) after delivery silently resets isActive to
+  // true and the next cron tick sends a duplicate.
+  const sameTimeAsBefore =
+    Boolean(existing?.remindAt) && Boolean(remindAt) && existing!.remindAt!.getTime() === remindAt!.getTime();
+  const alreadyDeliveredForThisTime = Boolean(existing?.lastSentAt) && sameTimeAsBefore;
+  const isActive = Boolean(note && remindAt) && !alreadyDeliveredForThisTime;
+
   await prisma.reminder.upsert({
     where: {
       userId_slotIndex: { userId: session.userId, slotIndex },
@@ -158,14 +167,14 @@ export async function saveReminderAction(formData: FormData) {
       remindAt,
       timezone,
       channel,
-      isActive: Boolean(note && remindAt),
+      isActive,
     },
     update: {
       note: note || null,
       remindAt,
       timezone,
       channel,
-      isActive: Boolean(note && remindAt),
+      isActive,
     },
   });
 

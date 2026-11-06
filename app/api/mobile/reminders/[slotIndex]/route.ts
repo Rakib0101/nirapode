@@ -30,11 +30,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slotInd
     const note = parse.data.note?.trim();
     const timezone = REMINDER_COUNTRIES.some((c) => c.timezone === parse.data.timezone) ? parse.data.timezone! : DEFAULT_REMINDER_TIMEZONE;
 
-    if (slotIndex > 1) {
-      const existing = await prisma.reminder.findUnique({ where: { userId_slotIndex: { userId: session.userId, slotIndex } } });
-      if (!existing || !existing.isUnlocked) {
-        return Response.json({ error: `Slot #${slotIndex} is locked. Please unlock it first.` }, { status: 400 });
-      }
+    const existing = await prisma.reminder.findUnique({ where: { userId_slotIndex: { userId: session.userId, slotIndex } } });
+    if (slotIndex > 1 && (!existing || !existing.isUnlocked)) {
+      return Response.json({ error: `Slot #${slotIndex} is locked. Please unlock it first.` }, { status: 400 });
     }
 
     let remindAt: Date | null = null;
@@ -45,10 +43,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ slotInd
       if (isNaN(remindAt.getTime())) return Response.json({ error: "Invalid date or time." }, { status: 400 });
     }
 
+    // Re-saving without changing the target time must not re-send a reminder
+    // that already went out for that exact instant — only a genuinely new/
+    // changed remindAt re-arms it. See app/actions/reminders.ts saveReminderAction
+    // for the matching web-side fix.
+    const sameTimeAsBefore =
+      Boolean(existing?.remindAt) && Boolean(remindAt) && existing!.remindAt!.getTime() === remindAt!.getTime();
+    const alreadyDeliveredForThisTime = Boolean(existing?.lastSentAt) && sameTimeAsBefore;
+    const isActive = Boolean(note && remindAt) && !alreadyDeliveredForThisTime;
+
     await prisma.reminder.upsert({
       where: { userId_slotIndex: { userId: session.userId, slotIndex } },
-      create: { userId: session.userId, slotIndex, isUnlocked: true, note: note || null, remindAt, timezone, channel, isActive: Boolean(note && remindAt) },
-      update: { note: note || null, remindAt, timezone, channel, isActive: Boolean(note && remindAt) },
+      create: { userId: session.userId, slotIndex, isUnlocked: true, note: note || null, remindAt, timezone, channel, isActive },
+      update: { note: note || null, remindAt, timezone, channel, isActive },
     });
 
     return Response.json({ success: true, message: `Reminder for Slot #${slotIndex} saved!` });
