@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
+import { issueMobileToken } from "@/lib/mobile-session";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
 import { notifyAdmin } from "@/lib/notifications";
+
+// See isSafeMobileRedirect in ../route.ts — re-checked here too since this is
+// the boundary that actually hands out a Bearer token. Only an app-scheme or
+// Expo-Go dev-client URI is allowed, never http(s), so this can't be abused
+// as an open redirect to exfiltrate a freshly-issued token to a public server.
+function isSafeMobileRedirect(uri: string | null): uri is string {
+  if (!uri) return false;
+  return /^nirapodemobileapp:\/\//.test(uri) || /^exp:\/\//.test(uri);
+}
 
 export async function GET(req: NextRequest) {
   let base = process.env.NEXT_PUBLIC_BASE_URL?.trim();
@@ -16,11 +26,19 @@ export async function GET(req: NextRequest) {
     base = host ? `${proto}://${host}` : "http://localhost:3000";
   }
 
-  const code = req.nextUrl.searchParams.get("code");
+  // Google echoes back whatever we sent as `state` untouched — that's how the
+  // mobile app's deep-link redirect round-trips through a flow it has no
+  // other way to carry state through (no cookies).
+  const rawMobileRedirect = req.nextUrl.searchParams.get("state");
+  const mobileRedirect = isSafeMobileRedirect(rawMobileRedirect) ? rawMobileRedirect : null;
 
-  if (!code) {
-    return NextResponse.redirect(new URL("/login?error=google_cancelled", req.url));
+  function fail(error: string): NextResponse {
+    if (mobileRedirect) return NextResponse.redirect(`${mobileRedirect}?error=${encodeURIComponent(error)}`);
+    return NextResponse.redirect(new URL(`/login?error=${error}`, req.url));
   }
+
+  const code = req.nextUrl.searchParams.get("code");
+  if (!code) return fail("google_cancelled");
 
   // Exchange code for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -36,9 +54,7 @@ export async function GET(req: NextRequest) {
   });
 
   const tokens = await tokenRes.json();
-  if (!tokens.access_token) {
-    return NextResponse.redirect(new URL("/login?error=google_failed", req.url));
-  }
+  if (!tokens.access_token) return fail("google_failed");
 
   // Get Google user info
   const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -47,9 +63,7 @@ export async function GET(req: NextRequest) {
   const profile = await profileRes.json();
   const { id: googleId, email, name, picture } = profile;
 
-  if (!email) {
-    return NextResponse.redirect(new URL("/login?error=google_no_email", req.url));
-  }
+  if (!email) return fail("google_no_email");
 
   // Find by googleId first, then fall back to email (link accounts)
   let user = await prisma.user.findFirst({
@@ -82,9 +96,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  if (!user.isActive) {
-    return NextResponse.redirect(new URL("/login?error=banned", req.url));
-  }
+  if (!user.isActive) return fail("banned");
 
   const refCode = req.cookies.get(REFERRAL_COOKIE_NAME)?.value;
   if (refCode) await attachReferralIfNeeded(user.id, refCode);
@@ -100,6 +112,13 @@ export async function GET(req: NextRequest) {
       ],
       actionPath: "/admin/users",
     });
+  }
+
+  if (mobileRedirect) {
+    const token = await issueMobileToken({ userId: user.id, role: user.role, email: user.email, fullName: user.fullName });
+    const mobileUser = { id: user.id, email: user.email, fullName: user.fullName, role: user.role, hasPin: Boolean(user.pinHash) };
+    const url = `${mobileRedirect}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(JSON.stringify(mobileUser))}`;
+    return NextResponse.redirect(url);
   }
 
   await createSession({
