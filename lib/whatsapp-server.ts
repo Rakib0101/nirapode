@@ -10,39 +10,70 @@ function getTwilioConfig() {
 }
 
 // WhatsApp Business API only allows free-form text within 24h of the
-// recipient last messaging us — a scheduled reminder or admin notification is
-// almost always sent outside that window, so it must go out as an approved
-// Content Template rather than plain text. TWILIO_DEFAULT_CONTENT_SID is
-// expected to be a template with one variable slot that holds the full
-// message; if the approved template's variable count/shape differs, adjust
-// the `contentVariables` map below to match (check via Twilio's Content API,
-// GET /v1/Content/{Sid}, once TWILIO_AUTH_TOKEN is set).
+// recipient last messaging us (an open "session"); outside that window a
+// message must go out as an approved Content Template, and Twilio rejects a
+// free-form send with error 63016. Verified live against this account,
+// though: Body-only sends are rejected outright with error 21654
+// ("ContentSid Required") regardless of session state — this Trial-account
+// WhatsApp Sandbox number requires a Content Template for every message, not
+// just ones outside a session window. Treating both codes as "needs a
+// template" keeps this working correctly on real production WABA numbers
+// (where only 63016 would ever fire) and on accounts like this one.
+//
+// IMPORTANT caveat about the template itself: TWILIO_DEFAULT_CONTENT_SID is
+// Twilio's generic Trial-account sandbox template (per the account holder,
+// two variables — likely date/time). Confirming its exact approved wording
+// programmatically (Twilio's Content API) is itself blocked on Trial
+// accounts (error 20003, "not available on a Trial account"), so its literal
+// text is unverified. Live-tested substituting arbitrary strings into both
+// variable slots, though, and Twilio delivers them without validating they
+// "look like" a date/time — so variable "1" below carries the actual
+// reminder text (the one thing that must come through), accepting the
+// message may read grammatically oddly depending on the template's real
+// wording. A real custom template with a dedicated free-text variable
+// requires upgrading past Trial and Meta approval; redo this properly once
+// that exists.
+const WHATSAPP_NEEDS_CONTENT_TEMPLATE_ERROR_CODES = new Set([63016, 21654]);
+
 async function sendViaTwilio(
   config: ReturnType<typeof getTwilioConfig>,
   to: string,
   text: string,
   mediaUrl?: string
 ): Promise<{ success: boolean; error?: string; sid?: string }> {
+  const client = twilio(config.accountSid, config.authToken);
+  const e164 = to.startsWith("+") ? to : `+${to.replace(/[^\d]/g, "")}`;
+  const toWhatsApp = to.startsWith("whatsapp:") ? to : `whatsapp:${e164}`;
+
   try {
-    const client = twilio(config.accountSid, config.authToken);
-    const e164 = to.startsWith("+") ? to : `+${to.replace(/[^\d]/g, "")}`;
-    const toWhatsApp = to.startsWith("whatsapp:") ? to : `whatsapp:${e164}`;
+    const message = await client.messages.create({
+      from: config.from,
+      to: toWhatsApp,
+      body: text,
+      ...(mediaUrl ? { mediaUrl: [mediaUrl] } : {}),
+    });
+    return { success: true, sid: message.sid };
+  } catch (err: unknown) {
+    const code = (err as { code?: number } | null)?.code;
+    if (!code || !WHATSAPP_NEEDS_CONTENT_TEMPLATE_ERROR_CODES.has(code) || !config.defaultContentSid) {
+      return { success: false, error: err instanceof Error ? err.message : "Twilio send failed" };
+    }
+  }
 
-    const params: Parameters<typeof client.messages.create>[0] = config.defaultContentSid
-      ? {
-          from: config.from,
-          to: toWhatsApp,
-          contentSid: config.defaultContentSid,
-          contentVariables: JSON.stringify({ "1": text }),
-        }
-      : {
-          from: config.from,
-          to: toWhatsApp,
-          body: text,
-          ...(mediaUrl ? { mediaUrl: [mediaUrl] } : {}),
-        };
-
-    const message = await client.messages.create(params);
+  // Fallback: send via the Content Template, substituting the actual
+  // reminder text into variable "1" so the real content still comes through
+  // (see caveat above).
+  try {
+    const now = new Date();
+    const message = await client.messages.create({
+      from: config.from,
+      to: toWhatsApp,
+      contentSid: config.defaultContentSid,
+      contentVariables: JSON.stringify({
+        "1": text,
+        "2": now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      }),
+    });
     return { success: true, sid: message.sid };
   } catch (err: unknown) {
     return { success: false, error: err instanceof Error ? err.message : "Twilio send failed" };
