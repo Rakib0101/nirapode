@@ -1,12 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import twilio from "twilio";
 
-function getTwilioConfig() {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
-  const authToken = process.env.TWILIO_AUTH_TOKEN || "";
-  const from = process.env.TWILIO_WHATSAPP_FROM || "";
-  const defaultContentSid = process.env.TWILIO_DEFAULT_CONTENT_SID || "";
-  return { enabled: Boolean(accountSid && authToken && from), accountSid, authToken, from, defaultContentSid };
+// Admin-configurable (see app/admin/settings/twilio-form.tsx) so the account
+// holder can set up their own Twilio account when they upgrade to a paid
+// plan, without a developer redeploying env vars — same DB-first,
+// env-var-fallback pattern as getWhatsAppConfig() below.
+async function getTwilioConfig() {
+  try {
+    const settings = await prisma.siteSetting.findMany({
+      where: { key: { in: ["twilio_account_sid", "twilio_auth_token", "twilio_whatsapp_from", "twilio_default_content_sid"] } },
+    });
+    const map = new Map(settings.map((s) => [s.key, s.value]));
+    const accountSid = map.get("twilio_account_sid") || process.env.TWILIO_ACCOUNT_SID || "";
+    const authToken = map.get("twilio_auth_token") || process.env.TWILIO_AUTH_TOKEN || "";
+    const from = map.get("twilio_whatsapp_from") || process.env.TWILIO_WHATSAPP_FROM || "";
+    const defaultContentSid = map.get("twilio_default_content_sid") || process.env.TWILIO_DEFAULT_CONTENT_SID || "";
+    return { enabled: Boolean(accountSid && authToken && from), accountSid, authToken, from, defaultContentSid };
+  } catch {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
+    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
+    const from = process.env.TWILIO_WHATSAPP_FROM || "";
+    const defaultContentSid = process.env.TWILIO_DEFAULT_CONTENT_SID || "";
+    return { enabled: Boolean(accountSid && authToken && from), accountSid, authToken, from, defaultContentSid };
+  }
 }
 
 // WhatsApp Business API only allows free-form text within 24h of the
@@ -36,7 +52,7 @@ function getTwilioConfig() {
 const WHATSAPP_NEEDS_CONTENT_TEMPLATE_ERROR_CODES = new Set([63016, 21654]);
 
 async function sendViaTwilio(
-  config: ReturnType<typeof getTwilioConfig>,
+  config: Awaited<ReturnType<typeof getTwilioConfig>>,
   to: string,
   text: string,
   mediaUrl?: string
@@ -120,7 +136,7 @@ export async function sendWhatsAppMessage({
   // uses now. Falls through to the generic DB-configured provider below only
   // when Twilio env vars aren't set, so existing Green API/UltraMsg/Meta
   // Cloud API setups keep working unchanged.
-  const twilioConfig = getTwilioConfig();
+  const twilioConfig = await getTwilioConfig();
   if (twilioConfig.enabled) {
     return sendViaTwilio(twilioConfig, to, text, mediaUrl);
   }

@@ -4,6 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { unlockSlotAction, saveReminderAction, triggerTestReminderAction } from "@/app/actions/reminders";
 import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE, utcToZonedInputs } from "@/lib/timezones";
+import { SelectField } from "@/components/select-field";
 
 const noopSubscribe = () => () => {};
 
@@ -24,13 +25,11 @@ export function RemindersView({
   walletBalance,
   slotPrice,
   userPhone,
-  userEmail,
 }: {
   slots: ReminderSlot[];
   walletBalance: number;
   slotPrice: number;
   userPhone: string | null;
-  userEmail: string;
 }) {
   const [loadingSlot, setLoadingSlot] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ slotIndex: number; text: string; error?: boolean } | null>(null);
@@ -201,62 +200,60 @@ export function RemindersView({
                       />
                     </div>
 
-                    {/* Date + Time selection + Country + Channel */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">
-                          Remind On Date
-                        </label>
-                        <input
-                          type="date"
-                          name="remindAt"
-                          defaultValue={defaultDate}
-                          required
-                          className="w-full text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground"
-                        />
+                    {/* Date + Time (row 1), Country + Channel (row 2) — kept as
+                        plain two-column rows instead of a 4-wide grid so none
+                        of these ever get squeezed narrow enough to truncate. */}
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-foreground mb-1">
+                            Remind On Date
+                          </label>
+                          <input
+                            type="date"
+                            name="remindAt"
+                            defaultValue={defaultDate}
+                            required
+                            className="w-full min-w-0 text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-foreground mb-1">
+                            Alarm Time
+                          </label>
+                          <input
+                            type="time"
+                            name="remindTime"
+                            defaultValue={defaultTime}
+                            required
+                            className="w-full min-w-0 text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground"
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">
-                          Alarm Time
-                        </label>
-                        <input
-                          type="time"
-                          name="remindTime"
-                          defaultValue={defaultTime}
-                          required
-                          className="w-full text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground"
-                        />
-                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-foreground mb-1">
+                            Country
+                          </label>
+                          <SelectField name="timezone" defaultValue={defaultTimezone}>
+                            {REMINDER_COUNTRIES.map((c) => (
+                              <option key={c.timezone} value={c.timezone}>{c.country}</option>
+                            ))}
+                          </SelectField>
+                        </div>
 
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">
-                          Country
-                        </label>
-                        <select
-                          name="timezone"
-                          defaultValue={defaultTimezone}
-                          className="w-full text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground bg-white"
-                        >
-                          {REMINDER_COUNTRIES.map((c) => (
-                            <option key={c.timezone} value={c.timezone}>{c.country}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">
-                          Notification Via
-                        </label>
-                        <select
-                          name="channel"
-                          defaultValue={s.channel ?? "WHATSAPP"}
-                          className="w-full text-xs px-3 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-foreground bg-white"
-                        >
-                          <option value="WHATSAPP">WhatsApp</option>
-                          <option value="GMAIL">Gmail / Email</option>
-                          <option value="BOTH">WhatsApp & Gmail</option>
-                        </select>
+                        <div>
+                          <label className="block text-xs font-medium text-foreground mb-1">
+                            Notification Via
+                          </label>
+                          <SelectField name="channel" defaultValue={s.channel ?? "WHATSAPP"}>
+                            <option value="WHATSAPP">WhatsApp</option>
+                            <option value="GMAIL">Gmail / Email</option>
+                            <option value="BOTH">WhatsApp & Gmail</option>
+                          </SelectField>
+                        </div>
                       </div>
                     </div>
 

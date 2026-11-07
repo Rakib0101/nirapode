@@ -3,7 +3,7 @@ import { getAllCommissionSettings, getAllPlatformCutSettings } from "@/lib/commi
 import { getPlatformWalletSummary } from "@/lib/platform-wallet";
 import { getShareSgdRate, getShare4Amounts, getShare4ClosedDates } from "@/lib/share-pricing";
 import { getAdminNotificationEmail, getAdminNotificationPhone, getModuleNotificationOverride } from "@/lib/notifications";
-import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings, getPinAuthSettings } from "@/app/actions/admin-settings";
+import { getAdSenseSettings, getReminderPriceSetting, getSmtpSettings, getWhatsAppApiSettings, getPinAuthSettings, getTwilioSettings } from "@/app/actions/admin-settings";
 import { getSiteContactSettings } from "@/lib/site-contact";
 import { prisma } from "@/lib/prisma";
 import { CurrencySettingsForm } from "./currency-form";
@@ -21,6 +21,7 @@ import { AdSenseSettingsForm } from "./adsense-form";
 import { ReminderPriceForm } from "./reminder-price-form";
 import { SmtpSettingsForm } from "./smtp-form";
 import { WhatsAppApiSettingsForm } from "./whatsapp-form";
+import { TwilioSettingsForm } from "./twilio-form";
 import { SiteContactForm } from "./site-contact-form";
 import { PinAuthSettingsForm } from "./pin-settings-form";
 import { TransferFeeForm } from "./transfer-fee-form";
@@ -65,6 +66,7 @@ export default async function AdminSettingsPage() {
     reminderSlotPrice,
     smtpSettings,
     whatsAppSettings,
+    twilioSettings,
     contactSettings,
     transferFee,
     reminderCronKey,
@@ -87,6 +89,7 @@ export default async function AdminSettingsPage() {
     getReminderPriceSetting(),
     getSmtpSettings(),
     getWhatsAppApiSettings(),
+    getTwilioSettings(),
     getSiteContactSettings(),
     getTransferFeeSetting(),
     getReminderCronKey(),
@@ -223,7 +226,7 @@ export default async function AdminSettingsPage() {
 
             {/* Pointer — platform cut settings now live in one place, under Agent Commission */}
             <div className="xl:col-span-2 rounded-2xl border border-dashed border-border px-5 py-3.5 text-xs text-muted-foreground">
-              Looking for the Share 6 / Share 4 platform cut percentage? It moved to the <span className="font-semibold text-foreground">Agent Commission</span> tab, under "Platform Commission (Company Revenue)" — it's now one real, paid-out setting instead of a separate display-only number.
+              Looking for the Share 6 / Share 4 platform cut percentage? It moved to the <span className="font-semibold text-foreground">Agent Commission</span> tab, under &quot;Platform Commission (Company Revenue)&quot; — it&apos;s now one real, paid-out setting instead of a separate display-only number.
             </div>
 
             {/* Share 4 offer amounts */}
@@ -350,6 +353,26 @@ export default async function AdminSettingsPage() {
               </div>
               <div className="p-5 sm:p-7">
                 <WhatsAppApiSettingsForm settings={whatsAppSettings} />
+              </div>
+            </div>
+
+            {/* Twilio WhatsApp */}
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="px-6 py-4.5 border-b border-border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <span className="text-lg">📱</span>
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-foreground text-sm sm:text-base">Twilio WhatsApp</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Real WhatsApp delivery for Reminders via Twilio — set up your own account when you upgrade
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 sm:p-7">
+                <TwilioSettingsForm settings={twilioSettings} />
               </div>
             </div>
           </div>

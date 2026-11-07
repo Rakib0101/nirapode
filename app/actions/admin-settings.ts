@@ -204,8 +204,8 @@ export async function saveModuleNotificationAction(_prev: State, formData: FormD
     return { error: "Unauthorized." };
   }
 
-  const module = formData.get("module") as NotifyModule;
-  if (module !== "SHARE4" && module !== "SHARE6") return { error: "Invalid module." };
+  const notifyModule = formData.get("module") as NotifyModule;
+  if (notifyModule !== "SHARE4" && notifyModule !== "SHARE6") return { error: "Invalid module." };
 
   const email = (formData.get("email") as string)?.trim() ?? "";
   if (email && !emailRegex.test(email)) {
@@ -214,8 +214,8 @@ export async function saveModuleNotificationAction(_prev: State, formData: FormD
   const phone = (formData.get("phone") as string)?.trim() ?? "";
 
   await Promise.all([
-    saveAdminNotificationEmail(email, module),
-    saveAdminNotificationPhone(phone, module),
+    saveAdminNotificationEmail(email, notifyModule),
+    saveAdminNotificationPhone(phone, notifyModule),
   ]);
 
   revalidatePath("/admin/settings");
@@ -756,6 +756,96 @@ export async function saveWhatsAppApiSettingsAction(_prev: State, formData: Form
   await prisma.$transaction(updates);
   revalidatePath("/admin/settings");
   return { success: true };
+}
+
+// Mirrors getWhatsAppApiSettings/saveWhatsAppApiSettingsAction above — the
+// masked placeholder convention is identical: a value already in the DB is
+// returned in full (admin can see/edit what they set), but a value that's
+// only coming from an env var is masked so the deployment secret never gets
+// rendered into page HTML.
+export async function getTwilioSettings() {
+  try {
+    const settings = await prisma.siteSetting.findMany({
+      where: { key: { in: ["twilio_account_sid", "twilio_auth_token", "twilio_whatsapp_from", "twilio_default_content_sid"] } },
+    });
+    const map = new Map(settings.map((s) => [s.key, s.value]));
+    return {
+      accountSid: map.get("twilio_account_sid") || process.env.TWILIO_ACCOUNT_SID || "",
+      authToken: map.get("twilio_auth_token") || (process.env.TWILIO_AUTH_TOKEN ? "••••••••" : ""),
+      whatsappFrom: map.get("twilio_whatsapp_from") || process.env.TWILIO_WHATSAPP_FROM || "",
+      defaultContentSid: map.get("twilio_default_content_sid") || process.env.TWILIO_DEFAULT_CONTENT_SID || "",
+    };
+  } catch {
+    return { accountSid: "", authToken: "", whatsappFrom: "", defaultContentSid: "" };
+  }
+}
+
+export async function saveTwilioSettingsAction(_prev: State, formData: FormData): Promise<State> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { error: "Unauthorized." };
+  }
+
+  const accountSid = (formData.get("accountSid") as string)?.trim() || "";
+  const authToken = (formData.get("authToken") as string)?.trim() || "";
+  const whatsappFrom = (formData.get("whatsappFrom") as string)?.trim() || "";
+  const defaultContentSid = (formData.get("defaultContentSid") as string)?.trim() || "";
+
+  if (whatsappFrom && !whatsappFrom.startsWith("whatsapp:+")) {
+    return { error: "WhatsApp From must look like whatsapp:+1XXXXXXXXXX (E.164 number, prefixed with whatsapp:)." };
+  }
+
+  const updates = [
+    prisma.siteSetting.upsert({
+      where: { key: "twilio_account_sid" },
+      create: { key: "twilio_account_sid", value: accountSid },
+      update: { value: accountSid },
+    }),
+    prisma.siteSetting.upsert({
+      where: { key: "twilio_whatsapp_from" },
+      create: { key: "twilio_whatsapp_from", value: whatsappFrom },
+      update: { value: whatsappFrom },
+    }),
+    prisma.siteSetting.upsert({
+      where: { key: "twilio_default_content_sid" },
+      create: { key: "twilio_default_content_sid", value: defaultContentSid },
+      update: { value: defaultContentSid },
+    }),
+  ];
+
+  if (authToken && authToken !== "••••••••") {
+    updates.push(
+      prisma.siteSetting.upsert({
+        where: { key: "twilio_auth_token" },
+        create: { key: "twilio_auth_token", value: authToken },
+        update: { value: authToken },
+      })
+    );
+  }
+
+  await prisma.$transaction(updates);
+  revalidatePath("/admin/settings");
+  return { success: true };
+}
+
+export async function testTwilioWhatsAppAction(toPhone: string): Promise<{ success: boolean; message: string }> {
+  const session = await getSession();
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+    return { success: false, message: "Unauthorized." };
+  }
+  if (!toPhone?.trim()) {
+    return { success: false, message: "Enter a phone number to send the test to." };
+  }
+
+  const { sendWhatsAppMessage } = await import("@/lib/whatsapp-server");
+  const res = await sendWhatsAppMessage({
+    to: toPhone.trim(),
+    text: "✅ This is a test WhatsApp message from Nirapode's Twilio integration (Admin Settings).",
+  });
+
+  return res.success
+    ? { success: true, message: `Sent! Twilio message SID: ${res.sid}` }
+    : { success: false, message: res.error ?? "Failed to send." };
 }
 
 export async function saveSiteContactSettingsAction(_prev: State, formData: FormData): Promise<State> {

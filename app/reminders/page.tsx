@@ -53,7 +53,6 @@ export default async function RemindersPage() {
           walletBalance={walletBalance}
           slotPrice={slotPrice}
           userPhone={user?.phone ?? null}
-          userEmail={user?.email ?? ""}
         />
       </div>
     </div>
