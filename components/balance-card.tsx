@@ -5,7 +5,8 @@ import Link from "next/link";
 
 // Balance with a show/hide eye toggle, matching the reference. Client-side
 // because of the toggle; the amount itself is passed in from the server.
-export function BalanceCard({ balance }: { balance: number }) {
+// Shared by the signed-in home and /dashboard so both show an identical card.
+export function BalanceCard({ balance, note }: { balance: number; note?: string }) {
   const [hidden, setHidden] = useState(false);
 
   return (
@@ -43,6 +44,8 @@ export function BalanceCard({ balance }: { balance: number }) {
           + Add Money
         </Link>
       </div>
+
+      {note && <p className="text-xs text-white/85 mt-3">{note}</p>}
     </div>
   );
 }

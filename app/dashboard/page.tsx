@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { CREDIT_TX_TYPES, WALLET_TX_LABELS } from "@/lib/wallet-tx";
+import { BalanceCard } from "@/components/balance-card";
 import Link from "next/link";
 
 async function getDashboardData(userId: string) {
@@ -131,21 +132,29 @@ export default async function DashboardPage() {
   ];
 
 
+  const firstName = (user?.fullName ?? session.fullName ?? session.email.split("@")[0]).trim().split(/\s+/)[0];
+
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-brand-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
-        <div className="mb-7">
-          <h1 className="text-2xl font-bold text-foreground">
-            Welcome back, {user?.fullName ?? session.fullName ?? session.email.split("@")[0]} 👋
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Member since{" "}
-            {user?.createdAt
-              ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-              : "recently"}
-          </p>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Hello, {firstName}!</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Member since{" "}
+              {user?.createdAt
+                ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+                : "recently"}
+            </p>
+          </div>
+          <Link
+            href="/contact"
+            className="shrink-0 text-xs font-bold text-white bg-brand px-4 py-2 rounded-full hover:bg-brand-dark transition-colors shadow-xs"
+          >
+            HELP
+          </Link>
         </div>
 
         {/* Pending Checkout Alert Banner */}
@@ -154,7 +163,7 @@ export default async function DashboardPage() {
             {pendingCheckouts.map((c) => (
               <div
                 key={c.id}
-                className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs"
+                className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0 text-lg">
@@ -186,64 +195,51 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Top stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
-          {/* Wallet */}
-          <div className="bg-white rounded-2xl border border-border p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                <p className="text-2xl font-bold text-foreground mt-0.5">
-                  ৳{wallet ? Number(wallet.balance).toFixed(2) : "0.00"}
-                </p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-            </div>
-            {pendingDeposits.length > 0 && (
-              <p className="text-xs text-amber-600 mb-2">
-                {pendingDeposits.length} deposit pending approval
-              </p>
-            )}
-            <Link href="/dashboard/deposit" className="text-xs text-brand font-semibold hover:underline">
-              + Deposit Funds →
-            </Link>
+        {/* Top stats — balance uses the same card as the signed-in home, so
+            the two screens look like one product. */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-7">
+          <div className="rounded-3xl overflow-hidden border border-border shadow-sm">
+            <BalanceCard
+              balance={wallet ? Number(wallet.balance) : 0}
+              note={
+                pendingDeposits.length > 0
+                  ? `${pendingDeposits.length} deposit pending approval`
+                  : undefined
+              }
+            />
           </div>
 
           {/* Portfolio */}
-          <div className="bg-white rounded-2xl border border-border p-5">
+          <div className="bg-white rounded-3xl border border-border shadow-sm p-6 flex flex-col justify-between">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground">Share Portfolio</p>
-                <p className="text-2xl font-bold text-foreground mt-0.5">
-                  ৳{portfolioValue.toFixed(2)}
-                </p>
+                <p className="text-2xl font-bold text-foreground mt-0.5">৳{portfolioValue.toFixed(2)}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-2xl bg-brand-50 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">
-              {totalShares} shares across {ownerships.length} {ownerships.length === 1 ? "project" : "projects"}
-            </p>
-            <Link href="/shares" className="text-xs text-brand font-semibold hover:underline">
-              Browse Projects →
-            </Link>
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">
+                {totalShares} shares across {ownerships.length} {ownerships.length === 1 ? "project" : "projects"}
+              </p>
+              <Link href="/shares" className="text-xs text-brand font-semibold hover:underline">
+                Browse Projects →
+              </Link>
+            </div>
           </div>
 
           {/* Pending */}
-          <div className="bg-white rounded-2xl border border-border p-5">
+          <div className="bg-white rounded-3xl border border-border shadow-sm p-6 flex flex-col justify-between">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground">Pending Requests</p>
                 <p className="text-2xl font-bold text-foreground mt-0.5">{pendingPurchases.length}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -255,7 +251,7 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-7">
           {/* Share Portfolio */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-border overflow-hidden">
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h2 className="font-semibold text-foreground">My Share Portfolio</h2>
               <Link href="/shares" className="text-xs text-brand hover:underline font-medium">
@@ -300,7 +296,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Recent Notifications */}
-          <div className="bg-white rounded-2xl border border-border overflow-hidden">
+          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
               <h2 className="font-semibold text-foreground">Notifications</h2>
             </div>
@@ -328,7 +324,7 @@ export default async function DashboardPage() {
 
         {/* Recent wallet transactions */}
         {wallet && (wallet.transactions ?? []).length > 0 && (
-          <div className="bg-white rounded-2xl border border-border overflow-hidden mb-7">
+          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden mb-7">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h2 className="font-semibold text-foreground">Recent Transactions</h2>
             </div>
@@ -357,7 +353,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {MODULE_LINKS.map((m) => (
             <Link key={m.href} href={m.href}>
-              <div className="bg-white rounded-xl border border-border p-5 hover:shadow-sm hover:border-brand/30 transition-all group">
+              <div className="bg-white rounded-2xl border border-border p-5 h-full hover:shadow-md hover:border-brand/30 transition-all group">
                 <div className="text-2xl mb-2">{m.icon}</div>
                 <p className="font-semibold text-foreground group-hover:text-brand transition-colors">{m.label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{m.desc}</p>
