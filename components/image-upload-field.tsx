@@ -6,10 +6,18 @@ type Props = {
   name?: string;
   maxSizeMB?: number;
   label?: string;
+  // Existing image to show when editing a record. Optional, so every current
+  // caller keeps the previous blank-start behaviour.
+  defaultPreview?: string | null;
 };
 
-export function ImageUploadField({ name = "imageUrl", maxSizeMB = 2, label = "Add Photo" }: Props) {
-  const [preview, setPreview] = useState<string | null>(null);
+export function ImageUploadField({
+  name = "imageUrl",
+  maxSizeMB = 2,
+  label = "Add Photo",
+  defaultPreview = null,
+}: Props) {
+  const [preview, setPreview] = useState<string | null>(defaultPreview);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +51,7 @@ export function ImageUploadField({ name = "imageUrl", maxSizeMB = 2, label = "Ad
 
       {preview ? (
         <div className="relative inline-block">
+          {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URI preview; next/image can't optimize these */}
           <img src={preview} alt="Attached" className="max-h-40 rounded-lg border border-border object-cover" />
           <button
             type="button"

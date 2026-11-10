@@ -98,6 +98,7 @@ enum CheckoutItemType {
   TAXI
   AIR_TICKET
   SERVICE
+  PRODUCT
   CUSTOM
 }
 
@@ -203,6 +204,7 @@ model User {
   processedBuyRequests ShareBuyRequest[]      @relation("BuyRequestProcessor")
   referredBuyRequests  ShareBuyRequest[]      @relation("BuyRequestReferrer")
   reminders            Reminder[]
+  productOrders        ProductOrder[]
   forumTopics          ForumTopic[]
   forumReplies         ForumReply[]
   sentTransfers              WalletTransfer[]       @relation("TransferSender")
@@ -639,6 +641,7 @@ model CheckoutItem {
   taxiRequestId      String?          @unique
   airTicketRequestId String?          @unique
   serviceRequestId   String?          @unique
+  productOrderId     String?          @unique
   description        String
   quantity            Int             @default(1)
   unitPrice           Decimal         @db.Decimal(12, 2)
@@ -649,6 +652,7 @@ model CheckoutItem {
   taxiRequest      TaxiRequest?      @relation(fields: [taxiRequestId], references: [id])
   airTicketRequest AirTicketRequest? @relation(fields: [airTicketRequestId], references: [id])
   serviceRequest   ServiceRequest?   @relation(fields: [serviceRequestId], references: [id])
+  productOrder     ProductOrder?     @relation(fields: [productOrderId], references: [id])
 }
 
 // ─────────────────────────────────────────────
@@ -1096,4 +1100,57 @@ model PartnerCompany {
   createdAt  DateTime @default(now())
 
   @@index([isActive, sortOrder])
+}
+
+// ─────────────────────────────────────────────
+// PRODUCTS (admin-managed shop)
+// ─────────────────────────────────────────────
+
+// Admin-listed items for sale. Ordering deliberately mirrors how taxi / air
+// tickets / services already work here: the customer submits a request, admin
+// confirms it, then admin issues a Checkout invoice the customer pays from
+// their wallet. There is no self-serve cart anywhere in this app.
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  price       Decimal  @db.Decimal(12, 2)
+  // null = untracked/unlimited stock. 0 = genuinely out of stock.
+  stock       Int?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders ProductOrder[]
+
+  @@index([isActive, sortOrder])
+}
+
+model ProductOrder {
+  id          String      @id @default(cuid())
+  productId   String
+  userId      String
+  fullName    String
+  phone       String
+  address     String?
+  note        String?
+  quantity    Int         @default(1)
+  // Price is copied at order time so later price edits never change the
+  // amount an existing order was placed at.
+  unitPrice   Decimal     @db.Decimal(12, 2)
+  totalAmount Decimal     @db.Decimal(12, 2)
+  status      ApplyStatus @default(PENDING)
+  adminNote   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  product      Product       @relation(fields: [productId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+  checkoutItem CheckoutItem?
+
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
 }

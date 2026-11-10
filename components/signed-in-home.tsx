@@ -165,7 +165,7 @@ const PRODUCT_CARDS: { href: string; title: string; from: string; icon: React.Re
 
 async function getHomeData(userId: string) {
   try {
-    const [wallet, deals] = await Promise.all([
+    const [wallet, deals, products] = await Promise.all([
       prisma.wallet.findUnique({ where: { userId }, select: { balance: true } }),
       prisma.project.findMany({
         where: { status: "ACTIVE" },
@@ -173,16 +173,26 @@ async function getHomeData(userId: string) {
         orderBy: { createdAt: "desc" },
         take: 6,
       }),
+      prisma.product.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, imageUrl: true, price: true, stock: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        take: 8,
+      }),
     ]);
-    return { balance: wallet ? Number(wallet.balance) : 0, deals };
+    return { balance: wallet ? Number(wallet.balance) : 0, deals, products };
   } catch (err) {
     console.error("Signed-in home data error:", err);
-    return { balance: 0, deals: [] as { id: string; name: string; imageUrl: string | null; sharePriceSgd: unknown }[] };
+    return {
+      balance: 0,
+      deals: [] as { id: string; name: string; imageUrl: string | null; sharePriceSgd: unknown }[],
+      products: [] as { id: string; name: string; imageUrl: string | null; price: unknown; stock: number | null }[],
+    };
   }
 }
 
 export async function SignedInHome({ userId, fullName }: { userId: string; fullName: string }) {
-  const { balance, deals } = await getHomeData(userId);
+  const { balance, deals, products } = await getHomeData(userId);
   const firstName = fullName.trim().split(/\s+/)[0];
 
   return (
@@ -221,26 +231,52 @@ export async function SignedInHome({ userId, fullName }: { userId: string; fullN
         </div>
       </section>
 
-      {/* ── PRODUCT row ── */}
+      {/* ── PRODUCT row ── real items for sale, admin-managed in /admin/products.
+           Falls back to the editorial "how it works" cards only when no
+           products are listed yet, so the row is never empty. ── */}
       <section className="bg-white py-7 border-t border-border">
         <div className="max-w-5xl mx-auto">
-          <div className="px-4 sm:px-6 lg:px-8">
+          <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between">
             <span className="inline-block text-sm font-extrabold tracking-wide text-white bg-emerald-600 px-4 py-1.5 rounded-xl">
               PRODUCT
             </span>
+            {products.length > 0 && (
+              <Link href="/products" className="text-sm font-semibold text-brand hover:underline">
+                See all →
+              </Link>
+            )}
           </div>
 
           <div className="mt-5 flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-6 lg:px-8 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {PRODUCT_CARDS.map((c) => (
-              <Link key={c.href} href={c.href} className="snap-start shrink-0 w-44 sm:w-52 group">
-                <div className={`h-28 sm:h-32 rounded-2xl bg-gradient-to-br ${c.from} flex items-center justify-center`}>
-                  {c.icon}
-                </div>
-                <p className="mt-3 text-sm font-semibold text-brand leading-snug group-hover:underline">
-                  {c.title}
-                </p>
-              </Link>
-            ))}
+            {products.length > 0
+              ? products.map((p) => {
+                  const soldOut = p.stock !== null && p.stock <= 0;
+                  return (
+                    <Link key={p.id} href={`/products/${p.id}`} className="snap-start shrink-0 w-44 sm:w-52 group">
+                      {p.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.imageUrl} alt={p.name} className="h-28 sm:h-32 w-full rounded-2xl object-cover" />
+                      ) : (
+                        <div className="h-28 sm:h-32 rounded-2xl bg-gradient-to-br from-brand to-brand-dark" />
+                      )}
+                      <p className="mt-3 text-sm font-semibold text-brand leading-snug group-hover:underline line-clamp-2">
+                        {p.name}
+                      </p>
+                      <p className="text-sm font-bold text-foreground mt-0.5">৳{Number(p.price).toFixed(2)}</p>
+                      {soldOut && <p className="text-[11px] font-semibold text-red-600">Out of stock</p>}
+                    </Link>
+                  );
+                })
+              : PRODUCT_CARDS.map((c) => (
+                  <Link key={c.href} href={c.href} className="snap-start shrink-0 w-44 sm:w-52 group">
+                    <div className={`h-28 sm:h-32 rounded-2xl bg-gradient-to-br ${c.from} flex items-center justify-center`}>
+                      {c.icon}
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-brand leading-snug group-hover:underline">
+                      {c.title}
+                    </p>
+                  </Link>
+                ))}
           </div>
         </div>
       </section>

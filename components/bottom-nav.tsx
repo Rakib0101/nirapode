@@ -71,10 +71,12 @@ const IcoApply    = <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none"
 const IcoRequest  = <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 8l2 2 4-4"/></svg>;
 const IcoResell   = <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/><circle cx="12" cy="12" r="2.5"/></svg>;
 const IcoMap      = <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>;
+const IcoShop     = <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>;
 
 // ── Extra links shown in the sheet (static — for guests) ──────────────────────
 
 const GUEST_LINKS = [
+  { href: "/products",           label: "Products",           icon: IcoShop   },
   { href: "/shares/buy-request", label: "Share 4", icon: IcoRequest },
   { href: "/shares/resell",      label: "Resell Market",      icon: IcoResell  },
   { href: "/apply",              label: "Apply for Service",  icon: IcoApply   },
@@ -88,6 +90,7 @@ const GUEST_LINKS = [
 ];
 
 const USER_LINKS = [
+  { href: "/products",           label: "Products",           icon: IcoShop     },
   { href: "/shares/my",          label: "My Investments",     icon: IcoChart    },
   { href: "/shares/buy-request", label: "Share 4", icon: IcoRequest  },
   { href: "/shares/resell",      label: "Resell Market",      icon: IcoResell   },
