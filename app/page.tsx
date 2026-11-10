@@ -1,8 +1,9 @@
-import { MRTMapCard } from "@/components/mrt-map-button";
 import { PartnerCompaniesSection } from "@/components/partner-companies-section";
 import { HomeShareChart } from "@/components/home-share-chart";
+import { SignedInHome } from "@/components/signed-in-home";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 
 async function getFeaturedProjects() {
 	try {
@@ -209,21 +210,53 @@ export default async function HomePage() {
 		"Full purchase and transaction history",
 	] as const;
 
+	const session = await getSession();
+
 	return (
 		<>
-			{/* ─── Hero ─── */}
-			<section className="relative overflow-hidden bg-white">
-				<div className="absolute inset-0 pointer-events-none overflow-hidden">
-					<div className="absolute -top-48 -right-48 size-160 rounded-full bg-brand-50 blur-3xl opacity-70" />
-					<div className="absolute bottom-0 -left-32 size-120 rounded-full bg-brand-100 blur-3xl opacity-30" />
-				</div>
-
-				<div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-36">
-					<div className="max-w-xl mx-auto">
-						<MRTMapCard />
+			{/* ─── Top of home: a balance + quick-action launcher once you're
+			     signed in, the marketing pitch when you're not. The MRT map
+			     used to be the whole hero here; it now lives at /mrt-map,
+			     linked from the More menu. ─── */}
+			{session ? (
+				<SignedInHome userId={session.userId} fullName={session.fullName} />
+			) : (
+				<section className="relative overflow-hidden bg-white">
+					<div className="absolute inset-0 pointer-events-none overflow-hidden">
+						<div className="absolute -top-48 -right-48 size-160 rounded-full bg-brand-50 blur-3xl opacity-70" />
+						<div className="absolute bottom-0 -left-32 size-120 rounded-full bg-brand-100 blur-3xl opacity-30" />
 					</div>
-				</div>
-			</section>
+
+					<div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-32">
+						<div className="max-w-2xl mx-auto text-center">
+							<span className="inline-block text-xs font-bold uppercase tracking-wider text-brand bg-brand-50 px-3 py-1 rounded-full mb-4">
+								Probashi Community Platform
+							</span>
+							<h1 className="text-3xl sm:text-5xl font-bold text-foreground leading-tight">
+								Everything you need, in one trusted place
+							</h1>
+							<p className="text-muted-foreground mt-4 text-base sm:text-lg leading-relaxed">
+								Invest in verified projects, manage your wallet, book taxis and air tickets, send parcels home with
+								travelling Probashis, and more — built for the Bangladeshi community in Singapore.
+							</p>
+							<div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+								<Link
+									href="/register"
+									className="bg-brand text-white font-semibold px-7 py-3 rounded-xl hover:bg-brand-dark active:scale-95 transition-all shadow-xs"
+								>
+									Create free account
+								</Link>
+								<Link
+									href="/login"
+									className="border border-border text-foreground font-semibold px-7 py-3 rounded-xl hover:bg-muted active:scale-95 transition-all"
+								>
+									Login
+								</Link>
+							</div>
+						</div>
+					</div>
+				</section>
+			)}
 
 
 			{/* ─── Marketplace highlight ─── */}
