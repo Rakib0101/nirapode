@@ -41,6 +41,9 @@ async function main() {
 		where: { user: { email: { in: SEED_EMAILS } } },
 	});
 	await prisma.serviceRequest.deleteMany();
+	// Orders first — ProductOrder has a required FK to Product.
+	await prisma.productOrder.deleteMany();
+	await prisma.product.deleteMany();
 	await prisma.applyService.deleteMany();
 	await prisma.islamicArticle.deleteMany();
 	await prisma.project.deleteMany();
@@ -1129,6 +1132,62 @@ Complete your evening adhkar, pray Isha, and sleep in a state of wudu. This rout
 	});
 	console.log("  ✓ Seeded 2 apply services");
 
+	// ── Products ──────────────────────────────────────────────────────────────
+	// Admin-listed shop items. Deliberately everyday goods a Bangladeshi
+	// household in Singapore actually buys, so the PRODUCT row on the homepage
+	// looks realistic out of the box. One is intentionally out of stock and one
+	// has untracked (null) stock, so both of those UI states are exercised.
+	await prisma.product.createMany({
+		data: [
+			{
+				name: "Premium Basmati Rice 5kg",
+				description:
+					"Long-grain aromatic basmati rice. Ideal for biryani, polao and everyday meals.",
+				price: 1200.0,
+				stock: 25,
+				isActive: true,
+				sortOrder: 0,
+			},
+			{
+				name: "Pure Mustard Oil 2L",
+				description:
+					"Cold-pressed mustard oil with the strong aroma used in traditional Bengali cooking.",
+				price: 650.0,
+				stock: 12,
+				isActive: true,
+				sortOrder: 1,
+			},
+			{
+				name: "Dried Fish (Shutki) 500g",
+				description:
+					"Sun-dried shutki, cleaned and vacuum packed. A taste of home.",
+				price: 900.0,
+				stock: 0, // out of stock on purpose — exercises the Sold out badge
+				isActive: true,
+				sortOrder: 2,
+			},
+			{
+				name: "Panjabi for Eid",
+				description:
+					"Cotton panjabi with fine embroidery. Available in M, L and XL — mention your size in the order note.",
+				price: 2500.0,
+				stock: null, // untracked stock — always orderable
+				isActive: true,
+				sortOrder: 3,
+			},
+			{
+				name: "Nirapode Prepaid SIM Top-up Card",
+				description:
+					"Prepaid top-up voucher for calling home. Delivered digitally after your order is confirmed.",
+				price: 300.0,
+				stock: 100,
+				isActive: true,
+				sortOrder: 4,
+			},
+		],
+	});
+	console.log("  ✓ Seeded 5 products");
+
 	// ── Done ──────────────────────────────────────────────────────────────────
 	console.log("\n✅  Seed complete!\n");
 	console.log("┌───────────────────────────────────────────────────────┐");
@@ -1152,7 +1211,7 @@ Complete your evening adhkar, pray Isha, and sleep in a state of wudu. This rout
 	);
 	console.log("           3 deposit requests  |  1 checkout");
 	console.log("           8 lost & found posts  |  8 notifications");
-	console.log("           2 apply services\n");
+	console.log("           2 apply services  |  5 products\n");
 }
 
 main()
