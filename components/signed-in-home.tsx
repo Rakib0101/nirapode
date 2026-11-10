@@ -111,58 +111,6 @@ const QUICK_ACTIONS: { href: string; label: string; icon: React.ReactNode }[] = 
   },
 ];
 
-// Editorial "how it works" cards. These point at real pages — the Blog table
-// has 0 published posts right now, so sourcing this row from blogs would
-// render an empty strip. Swap the source to Blog once posts are published.
-const PRODUCT_CARDS: { href: string; title: string; from: string; icon: React.ReactNode }[] = [
-  {
-    href: "/dashboard/deposit",
-    title: "How to Add Money to your Wallet",
-    from: "from-indigo-100 to-indigo-50",
-    icon: (
-      <Duotone>
-        <rect x="4" y="12" width="40" height="26" rx="5" opacity="0.35" />
-        <circle cx="24" cy="25" r="7" />
-      </Duotone>
-    ),
-  },
-  {
-    href: "/shares",
-    title: "How to invest in Shares 6",
-    from: "from-emerald-100 to-emerald-50",
-    icon: (
-      <Duotone>
-        <rect x="6" y="26" width="8" height="16" rx="2" opacity="0.35" />
-        <rect x="20" y="18" width="8" height="24" rx="2" opacity="0.35" />
-        <rect x="34" y="8" width="8" height="34" rx="2" />
-      </Duotone>
-    ),
-  },
-  {
-    href: "/pick-put",
-    title: "Send parcels home with Pick & Put",
-    from: "from-amber-100 to-amber-50",
-    icon: (
-      <Duotone>
-        <path d="M24 5l18 9v20l-18 9-18-9V14z" opacity="0.35" />
-        <path d="M24 24.6L6.6 15.3 24 6l17.4 9.3z" />
-      </Duotone>
-    ),
-  },
-  {
-    href: "/taxi",
-    title: "Book a Taxi or Air Ticket",
-    from: "from-sky-100 to-sky-50",
-    icon: (
-      <Duotone>
-        <rect x="4" y="22" width="40" height="14" rx="4" opacity="0.35" />
-        <circle cx="13" cy="38" r="4" />
-        <circle cx="35" cy="38" r="4" />
-      </Duotone>
-    ),
-  },
-];
-
 async function getHomeData(userId: string) {
   try {
     const [wallet, deals, products] = await Promise.all([
@@ -231,55 +179,58 @@ export async function SignedInHome({ userId, fullName }: { userId: string; fullN
         </div>
       </section>
 
-      {/* ── PRODUCT row ── real items for sale, admin-managed in /admin/products.
-           Falls back to the editorial "how it works" cards only when no
-           products are listed yet, so the row is never empty. ── */}
-      <section className="bg-white py-7 border-t border-border">
-        <div className="max-w-5xl mx-auto">
-          <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            <span className="inline-block text-sm font-extrabold tracking-wide text-white bg-emerald-600 px-4 py-1.5 rounded-xl">
-              PRODUCT
-            </span>
-            {products.length > 0 && (
-              <Link href="/products" className="text-sm font-semibold text-brand hover:underline">
-                See all →
-              </Link>
-            )}
-          </div>
+      {/* ── PRODUCT ── real items for sale, admin-managed in /admin/products.
+           A bordered container with a price-first grid, matching the balance
+           card above. Hidden entirely when the catalog is empty (same as Mega
+           Deals) rather than falling back to unrelated cards, which read as
+           broken under a heading that says PRODUCT. ── */}
+      {products.length > 0 && (
+        <section className="bg-brand-50/50 pb-7">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="rounded-3xl border border-border bg-white shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <span className="inline-block text-sm font-extrabold tracking-wide text-white bg-emerald-600 px-4 py-1.5 rounded-xl">
+                  PRODUCT
+                </span>
+                <Link href="/products" className="text-sm font-semibold text-brand hover:underline">
+                  See all →
+                </Link>
+              </div>
 
-          <div className="mt-5 flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-6 lg:px-8 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {products.length > 0
-              ? products.map((p) => {
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 p-5">
+                {products.slice(0, 4).map((p) => {
                   const soldOut = p.stock !== null && p.stock <= 0;
                   return (
-                    <Link key={p.id} href={`/products/${p.id}`} className="snap-start shrink-0 w-44 sm:w-52 group">
-                      {p.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.imageUrl} alt={p.name} className="h-28 sm:h-32 w-full rounded-2xl object-cover" />
-                      ) : (
-                        <div className="h-28 sm:h-32 rounded-2xl bg-gradient-to-br from-brand to-brand-dark" />
-                      )}
-                      <p className="mt-3 text-sm font-semibold text-brand leading-snug group-hover:underline line-clamp-2">
+                    <Link key={p.id} href={`/products/${p.id}`} className="group">
+                      <div className="relative">
+                        {p.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name}
+                            className="h-28 sm:h-36 w-full rounded-2xl object-cover border border-border"
+                          />
+                        ) : (
+                          <div className="h-28 sm:h-36 w-full rounded-2xl bg-gradient-to-br from-brand to-brand-dark" />
+                        )}
+                        {soldOut && (
+                          <span className="absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded-full">
+                            Sold out
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-2.5 text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-brand transition-colors">
                         {p.name}
                       </p>
-                      <p className="text-sm font-bold text-foreground mt-0.5">৳{Number(p.price).toFixed(2)}</p>
-                      {soldOut && <p className="text-[11px] font-semibold text-red-600">Out of stock</p>}
+                      <p className="text-base font-bold text-brand mt-1">৳{Number(p.price).toFixed(2)}</p>
                     </Link>
                   );
-                })
-              : PRODUCT_CARDS.map((c) => (
-                  <Link key={c.href} href={c.href} className="snap-start shrink-0 w-44 sm:w-52 group">
-                    <div className={`h-28 sm:h-32 rounded-2xl bg-gradient-to-br ${c.from} flex items-center justify-center`}>
-                      {c.icon}
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-brand leading-snug group-hover:underline">
-                      {c.title}
-                    </p>
-                  </Link>
-                ))}
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Mega Deals ── (real ACTIVE projects; hidden when there are none) */}
       {deals.length > 0 && (
