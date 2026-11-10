@@ -1,166 +1,298 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { BalanceCard } from "@/components/balance-card";
 
-// GCash-style signed-in home: balance up top, then a grid of the actions
-// people actually open the app for. Rendered at / for logged-in users only
-// (guests get the marketing hero instead) — see app/page.tsx.
+// GCash-style signed-in home: balance up top, an icon grid of the actions
+// people actually open the app for, then content rows. Rendered at / for
+// logged-in users only (guests get the marketing hero) — see app/page.tsx.
+//
+// Icons are deliberately duotone filled shapes with no tile behind them, to
+// match the reference's chunky illustrated look rather than thin line icons.
+// `currentColor` + an opacity layer keeps them theme-safe.
 
-const ICON = "w-6 h-6";
+const SVG = "w-9 h-9 text-brand";
+
+function Duotone({ children }: { children: React.ReactNode }) {
+  return (
+    <svg className={SVG} viewBox="0 0 48 48" fill="currentColor" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
 
 const QUICK_ACTIONS: { href: string; label: string; icon: React.ReactNode }[] = [
   {
     href: "/wallet/send",
     label: "Send",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13" />
-        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-      </svg>
+      <Duotone>
+        <rect x="4" y="12" width="26" height="18" rx="4" opacity="0.3" />
+        <path d="M31 18.5l9-6.5v24l-9-6.5z" />
+        <path d="M12 21h12v4H12z" opacity="0.85" />
+      </Duotone>
     ),
   },
   {
     href: "/dashboard/deposit",
     label: "Deposit",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 5v14" />
-        <path d="M19 12l-7 7-7-7" />
-      </svg>
+      <Duotone>
+        <rect x="6" y="26" width="36" height="16" rx="4" opacity="0.3" />
+        <path d="M24 4a2.5 2.5 0 012.5 2.5v12.9l4.7-4.7a2.5 2.5 0 113.6 3.6l-9 9a2.5 2.5 0 01-3.6 0l-9-9a2.5 2.5 0 113.6-3.6l4.7 4.7V6.5A2.5 2.5 0 0124 4z" />
+      </Duotone>
     ),
   },
   {
     href: "/dashboard/withdraw",
     label: "Withdraw",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 19V5" />
-        <path d="M5 12l7-7 7 7" />
-      </svg>
+      <Duotone>
+        <rect x="6" y="26" width="36" height="16" rx="4" opacity="0.3" />
+        <path d="M24 30a2.5 2.5 0 01-2.5-2.5V14.6l-4.7 4.7a2.5 2.5 0 11-3.6-3.6l9-9a2.5 2.5 0 013.6 0l9 9a2.5 2.5 0 11-3.6 3.6l-4.7-4.7v12.9A2.5 2.5 0 0124 30z" />
+      </Duotone>
     ),
   },
   {
     href: "/shares",
     label: "Shares 6",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-        <polyline points="16 7 22 7 22 13" />
-      </svg>
+      <Duotone>
+        <rect x="5" y="28" width="9" height="15" rx="2.5" opacity="0.3" />
+        <rect x="19" y="20" width="9" height="23" rx="2.5" opacity="0.3" />
+        <rect x="33" y="10" width="9" height="33" rx="2.5" opacity="0.3" />
+        <path d="M8 24.5a2.4 2.4 0 01-1.6-4.2l11-9.8a2.4 2.4 0 013 0l6.4 5 9.6-9.1a2.4 2.4 0 113.3 3.5l-11.2 10.6a2.4 2.4 0 01-3.1.1l-6.5-5.1-9.3 8.3a2.4 2.4 0 01-1.6.7z" />
+      </Duotone>
     ),
   },
   {
     href: "/taxi",
     label: "Taxi",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="3" width="15" height="13" rx="1" />
-        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-        <circle cx="5.5" cy="18.5" r="2.5" />
-        <circle cx="18.5" cy="18.5" r="2.5" />
-      </svg>
+      <Duotone>
+        <path d="M6 24l4-9a5 5 0 014.6-3h18.8A5 5 0 0138 15l4 9z" opacity="0.3" />
+        <rect x="4" y="23" width="40" height="14" rx="4" />
+        <circle cx="13" cy="39" r="4" />
+        <circle cx="35" cy="39" r="4" />
+        <rect x="18" y="4" width="12" height="6" rx="2" opacity="0.85" />
+      </Duotone>
     ),
   },
   {
     href: "/air-ticket",
     label: "Air Ticket",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.2.6-.6.5-1.1z" />
-      </svg>
+      <Duotone>
+        <path d="M4 30l40-16-6 20-10-4-6 9-2-10z" opacity="0.3" />
+        <path d="M44 10a3 3 0 00-4-2.6L6 21a2 2 0 00-.1 3.7l8.4 3.9 20-13.4-15 15.9.6 8.3a1.6 1.6 0 002.9.8l4.4-6 8.3 3.8a2 2 0 002.8-1.4l6.6-25.8A3 3 0 0044 10z" />
+      </Duotone>
     ),
   },
   {
     href: "/pick-put",
     label: "Pick & Put",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        <line x1="12" y1="22.08" x2="12" y2="12" />
-      </svg>
+      <Duotone>
+        <path d="M24 4l18 9v22l-18 9-18-9V13z" opacity="0.3" />
+        <path d="M24 24.6L6.6 15.3 24 6l17.4 9.3z" />
+        <path d="M21.5 27v16.2l-15-7.5V19.5z" opacity="0.85" />
+      </Duotone>
     ),
   },
   {
     href: "/services",
     label: "Services",
     icon: (
-      <svg className={ICON} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
+      <Duotone>
+        <rect x="4" y="14" width="40" height="28" rx="5" opacity="0.3" />
+        <path d="M18 6a5 5 0 00-5 5v3h5v-3h12v3h5v-3a5 5 0 00-5-5z" />
+        <path d="M4 20h40v6a4 4 0 01-2.6 3.7L26 35.2a6 6 0 01-4 0L6.6 29.7A4 4 0 014 26z" />
+      </Duotone>
     ),
   },
 ];
 
-async function getBalance(userId: string): Promise<number> {
+// Editorial "how it works" cards. These point at real pages — the Blog table
+// has 0 published posts right now, so sourcing this row from blogs would
+// render an empty strip. Swap the source to Blog once posts are published.
+const PRODUCT_CARDS: { href: string; title: string; from: string; icon: React.ReactNode }[] = [
+  {
+    href: "/dashboard/deposit",
+    title: "How to Add Money to your Wallet",
+    from: "from-indigo-100 to-indigo-50",
+    icon: (
+      <Duotone>
+        <rect x="4" y="12" width="40" height="26" rx="5" opacity="0.35" />
+        <circle cx="24" cy="25" r="7" />
+      </Duotone>
+    ),
+  },
+  {
+    href: "/shares",
+    title: "How to invest in Shares 6",
+    from: "from-emerald-100 to-emerald-50",
+    icon: (
+      <Duotone>
+        <rect x="6" y="26" width="8" height="16" rx="2" opacity="0.35" />
+        <rect x="20" y="18" width="8" height="24" rx="2" opacity="0.35" />
+        <rect x="34" y="8" width="8" height="34" rx="2" />
+      </Duotone>
+    ),
+  },
+  {
+    href: "/pick-put",
+    title: "Send parcels home with Pick & Put",
+    from: "from-amber-100 to-amber-50",
+    icon: (
+      <Duotone>
+        <path d="M24 5l18 9v20l-18 9-18-9V14z" opacity="0.35" />
+        <path d="M24 24.6L6.6 15.3 24 6l17.4 9.3z" />
+      </Duotone>
+    ),
+  },
+  {
+    href: "/taxi",
+    title: "Book a Taxi or Air Ticket",
+    from: "from-sky-100 to-sky-50",
+    icon: (
+      <Duotone>
+        <rect x="4" y="22" width="40" height="14" rx="4" opacity="0.35" />
+        <circle cx="13" cy="38" r="4" />
+        <circle cx="35" cy="38" r="4" />
+      </Duotone>
+    ),
+  },
+];
+
+async function getHomeData(userId: string) {
   try {
-    const wallet = await prisma.wallet.findUnique({ where: { userId }, select: { balance: true } });
-    return wallet ? Number(wallet.balance) : 0;
+    const [wallet, deals] = await Promise.all([
+      prisma.wallet.findUnique({ where: { userId }, select: { balance: true } }),
+      prisma.project.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true, name: true, imageUrl: true, sharePriceSgd: true },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+    ]);
+    return { balance: wallet ? Number(wallet.balance) : 0, deals };
   } catch (err) {
-    console.error("Signed-in home wallet fetch error:", err);
-    return 0;
+    console.error("Signed-in home data error:", err);
+    return { balance: 0, deals: [] as { id: string; name: string; imageUrl: string | null; sharePriceSgd: unknown }[] };
   }
 }
 
 export async function SignedInHome({ userId, fullName }: { userId: string; fullName: string }) {
-  const balance = await getBalance(userId);
+  const { balance, deals } = await getHomeData(userId);
   const firstName = fullName.trim().split(/\s+/)[0];
 
   return (
-    <section className="bg-brand-50/40">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 sm:pt-8">
-        {/* Greeting */}
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Hello, {firstName}!</h1>
-          <Link
-            href="/contact"
-            className="text-xs font-bold text-white bg-brand px-4 py-2 rounded-full hover:bg-brand-dark transition-colors shadow-xs"
-          >
-            HELP
-          </Link>
-        </div>
-
-        {/* Balance + quick actions, joined into one card like the reference */}
-        <div className="rounded-3xl overflow-hidden border border-border shadow-sm">
-          <div className="bg-gradient-to-br from-brand to-brand-dark px-5 sm:px-7 py-6">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70">Available Balance</p>
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-1.5">
-              <p className="text-3xl sm:text-4xl font-bold text-white">
-                ৳ {balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <Link
-                href="/dashboard/deposit"
-                className="shrink-0 text-sm font-bold text-brand bg-white px-5 py-2.5 rounded-full hover:bg-white/90 active:scale-95 transition-all shadow-xs"
-              >
-                + Add Money
-              </Link>
-            </div>
+    <>
+      {/* ── Balance + quick actions ── */}
+      <section className="bg-brand-50/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-7">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Hello, {firstName}!</h1>
+            <Link
+              href="/contact"
+              className="text-xs font-bold text-white bg-brand px-4 py-2 rounded-full hover:bg-brand-dark transition-colors shadow-xs"
+            >
+              HELP
+            </Link>
           </div>
 
-          <div className="bg-white grid grid-cols-4 gap-y-5 px-3 sm:px-5 py-6">
-            {QUICK_ACTIONS.map((a) => (
-              <Link
-                key={a.href}
-                href={a.href}
-                className="flex flex-col items-center gap-2 text-center active:scale-95 transition-transform group"
-              >
-                <span className="w-12 h-12 rounded-2xl bg-brand-50 text-brand flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-colors">
+          <div className="rounded-3xl overflow-hidden border border-border shadow-sm">
+            <BalanceCard balance={balance} />
+
+            <div className="bg-white grid grid-cols-4 gap-y-6 px-2 sm:px-5 py-7">
+              {QUICK_ACTIONS.map((a) => (
+                <Link
+                  key={a.href}
+                  href={a.href}
+                  className="flex flex-col items-center gap-2.5 text-center active:scale-95 transition-transform"
+                >
                   {a.icon}
-                </span>
-                <span className="text-[11px] sm:text-xs font-medium text-foreground leading-tight px-0.5">
-                  {a.label}
-                </span>
+                  <span className="text-[11px] sm:text-xs font-medium text-foreground leading-tight px-0.5">
+                    {a.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRODUCT row ── */}
+      <section className="bg-white py-7 border-t border-border">
+        <div className="max-w-5xl mx-auto">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <span className="inline-block text-sm font-extrabold tracking-wide text-white bg-emerald-600 px-4 py-1.5 rounded-xl">
+              PRODUCT
+            </span>
+          </div>
+
+          <div className="mt-5 flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-6 lg:px-8 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {PRODUCT_CARDS.map((c) => (
+              <Link key={c.href} href={c.href} className="snap-start shrink-0 w-44 sm:w-52 group">
+                <div className={`h-28 sm:h-32 rounded-2xl bg-gradient-to-br ${c.from} flex items-center justify-center`}>
+                  {c.icon}
+                </div>
+                <p className="mt-3 text-sm font-semibold text-brand leading-snug group-hover:underline">
+                  {c.title}
+                </p>
               </Link>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Pointer to the full dashboard — this home is a launcher, not a replacement */}
-        <div className="flex justify-center mt-4">
-          <Link href="/dashboard" className="text-xs font-semibold text-brand hover:underline">
-            View full dashboard →
-          </Link>
-        </div>
+      {/* ── Mega Deals ── (real ACTIVE projects; hidden when there are none) */}
+      {deals.length > 0 && (
+        <section className="bg-muted py-7">
+          <div className="max-w-5xl mx-auto">
+            <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground">Mega Deals</h2>
+              <Link href="/shares" className="flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
+                Show more
+                <span className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </span>
+              </Link>
+            </div>
+
+            <div className="mt-4 flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-6 lg:px-8 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {deals.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/shares/${d.id}`}
+                  className="snap-start shrink-0 w-72 sm:w-96 rounded-2xl overflow-hidden border border-border bg-white hover:shadow-md transition-shadow"
+                >
+                  {d.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={d.imageUrl} alt={d.name} className="w-full h-36 sm:h-44 object-cover" />
+                  ) : (
+                    <div className="w-full h-36 sm:h-44 bg-gradient-to-br from-brand to-brand-dark" />
+                  )}
+                  <div className="px-4 py-3">
+                    <p className="font-semibold text-foreground text-sm">{d.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      S${Number(d.sharePriceSgd).toFixed(2)} per share
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <div className="bg-muted pb-6 text-center">
+        <Link href="/dashboard" className="text-xs font-semibold text-brand hover:underline">
+          View full dashboard →
+        </Link>
       </div>
-    </section>
+    </>
   );
 }
