@@ -10,10 +10,26 @@ export async function POST(req: Request) {
     const session = await getMobileSession(req);
     if (!session) return unauthorizedJson();
 
-    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { pinHash: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { pinHash: true, passwordHash: true },
+    });
     if (!user?.pinHash) {
       const token = await issueMobileToken({ ...session, hasPin: false });
       return Response.json({ success: true, token });
+    }
+
+    // Same guard as the web action: transfers are confirmed with a password
+    // OR a PIN, so removing the PIN from a Google account (which has no
+    // password) would silently block Send Money.
+    if (!user.passwordHash) {
+      return Response.json(
+        {
+          error:
+            "Your PIN is the only way to confirm wallet transfers, because your account has no password (you signed in with Google). Turning it off would block Send Money.",
+        },
+        { status: 400 }
+      );
     }
 
     const body = await req.json().catch(() => ({}));

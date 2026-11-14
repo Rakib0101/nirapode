@@ -189,11 +189,23 @@ export async function disablePinAction(
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { pinHash: true },
+      select: { pinHash: true, passwordHash: true },
     });
 
     if (!user?.pinHash) {
       return { success: true };
+    }
+
+    // Money transfers require confirming with a password OR a PIN (see
+    // app/actions/wallet-transfer.ts). Google users have no password, so
+    // removing their PIN used to leave them with no credential at all —
+    // silently blocking Send Money until they turned the PIN back on.
+    // Refuse instead of quietly breaking their wallet.
+    if (!user.passwordHash) {
+      return {
+        error:
+          "Your PIN is the only way to confirm wallet transfers, because your account has no password (you signed in with Google). Turning it off would block Send Money. Set a password first if you want to remove the PIN.",
+      };
     }
 
     const pin = (formData?.get("pin") as string)?.trim();
