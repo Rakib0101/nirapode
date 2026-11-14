@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
+import { rememberAccount } from "@/lib/remembered-account";
+import { resetPinLockout } from "@/lib/pin-login";
 import { issueMobileToken } from "@/lib/mobile-session";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
@@ -115,6 +117,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (mobileRedirect) {
+    await resetPinLockout(user.id);
     const token = await issueMobileToken({ userId: user.id, role: user.role, email: user.email, fullName: user.fullName });
     const mobileUser = { id: user.id, email: user.email, fullName: user.fullName, role: user.role, hasPin: Boolean(user.pinHash) };
     const url = `${mobileRedirect}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(JSON.stringify(mobileUser))}`;
@@ -128,6 +131,10 @@ export async function GET(req: NextRequest) {
     fullName: user.fullName,
     hasPin: Boolean(user.pinHash),
   });
+  // This browser is now "their" device, so day-to-day sign-in here becomes the
+  // PIN screen. Google proves identity, so it also releases a PIN lockout.
+  await rememberAccount({ email: user.email, fullName: user.fullName });
+  await resetPinLockout(user.id);
 
   // Check if admin has enabled/disabled prompting Google users to set a PIN
   let shouldPromptPin = !user.pinHash;

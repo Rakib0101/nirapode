@@ -22,7 +22,7 @@ async function getPendingCounts() {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
 
-  if (!session) redirect("/login");
+  if (!session) redirect("/admin-login");
   if (!ADMIN_ROLES.includes(session.role)) redirect("/dashboard");
 
   const pendingCounts = await getPendingCounts();

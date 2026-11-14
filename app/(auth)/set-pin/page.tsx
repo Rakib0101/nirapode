@@ -83,14 +83,8 @@ export default function SetPinPage() {
           {pending ? "Saving PIN…" : "Save 4-Digit PIN"}
         </button>
 
-        <div className="text-center pt-2">
-          <Link
-            href="/dashboard"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors hover:underline"
-          >
-            Skip for now & go to dashboard →
-          </Link>
-        </div>
+        {/* No "skip" — the PIN is how you sign in, so an account without one
+            would have no way back in. */}
       </form>
     </div>
   );

@@ -1,7 +1,16 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession, markPinVerifiedAndUpdateSession, clearPinVerified, updateSessionClaims } from "@/lib/session";
+import {
+  createSession,
+  getSession,
+  markPinVerified,
+  markPinVerifiedAndUpdateSession,
+  clearPinVerified,
+  updateSessionClaims,
+} from "@/lib/session";
+import { getRememberedAccount, rememberAccount } from "@/lib/remembered-account";
+import { findPinResetTarget, isPinMandatoryRole, type PinLoginUser } from "@/lib/pin-login";
 import { generateOTP, sendOTPEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
@@ -72,18 +81,31 @@ export async function verifyPinAction(
 
 // ─── Forgot PIN — email OTP scoped to the logged-in user's own account ────────
 
+// Who the PIN reset is for. Normally the signed-in user — but PIN login means
+// the session may be long gone by the time someone forgets their PIN, so fall
+// back to the account this browser remembers. Without this, forgetting four
+// digits would lock you out of the account for good.
+async function resolvePinResetTarget(): Promise<PinLoginUser | null> {
+  const session = await getSession();
+  if (session) {
+    return { id: session.userId, email: session.email, role: session.role, fullName: session.fullName ?? session.email };
+  }
+  const remembered = await getRememberedAccount();
+  return findPinResetTarget(remembered?.email);
+}
+
 export async function requestPinResetOtpAction(
   _prev: ActionState
 ): Promise<ActionState> {
   try {
-    const session = await getSession();
-    if (!session) redirect("/login");
+    const target = await resolvePinResetTarget();
+    if (!target) redirect("/login");
 
     const otp = generateOTP();
     await prisma.otpToken.create({
       data: {
-        userId: session.userId,
-        email: session.email,
+        userId: target.id,
+        email: target.email,
         token: otp,
         type: "RESET_PIN",
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
@@ -91,7 +113,7 @@ export async function requestPinResetOtpAction(
     });
 
     try {
-      await sendOTPEmail(session.email, otp, "reset-pin");
+      await sendOTPEmail(target.email, otp, "reset-pin");
     } catch (err) {
       console.error("[OTP] Failed to send PIN reset email:", err);
       return { error: "Failed to send the code. Please try again." };
@@ -126,7 +148,8 @@ export async function confirmPinResetAction(
   let redirectUrl = "";
   try {
     const session = await getSession();
-    if (!session) redirect("/login");
+    const target = await resolvePinResetTarget();
+    if (!target) redirect("/login");
 
     const parse = confirmPinResetSchema.safeParse({
       otp: formData.get("otp"),
@@ -146,7 +169,7 @@ export async function confirmPinResetAction(
     const { otp, pin } = parse.data;
 
     const record = await prisma.otpToken.findFirst({
-      where: { userId: session.userId, email: session.email, token: otp, type: "RESET_PIN", usedAt: null },
+      where: { userId: target.id, email: target.email, token: otp, type: "RESET_PIN", usedAt: null },
     });
     if (!record) return { error: "Invalid or expired code." };
     if (record.expiresAt < new Date()) return { error: "Code expired. Request a new one." };
@@ -155,10 +178,26 @@ export async function confirmPinResetAction(
 
     await prisma.$transaction([
       prisma.otpToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
-      prisma.user.update({ where: { id: session.userId }, data: { pinHash } }),
+      // Clearing the lockout here is the whole point of the email flow: it's
+      // the way back for someone who burned through their attempts.
+      prisma.user.update({
+        where: { id: target.id },
+        data: { pinHash, pinFailedAttempts: 0, pinLockedUntil: null },
+      }),
     ]);
 
-    await markPinVerifiedAndUpdateSession(session.userId);
+    if (session) {
+      await markPinVerifiedAndUpdateSession(target.id);
+    } else {
+      // Signed-out reset: proving control of the account's email and setting a
+      // new PIN is a login, so don't make them do it twice.
+      await createSession(
+        { userId: target.id, role: target.role, email: target.email, fullName: target.fullName, hasPin: true },
+        true
+      );
+      await markPinVerified(target.id);
+      await rememberAccount({ email: target.email, fullName: target.fullName });
+    }
     redirectUrl = safeNext(formData.get("next"));
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
@@ -194,6 +233,17 @@ export async function disablePinAction(
 
     if (!user?.pinHash) {
       return { success: true };
+    }
+
+    // The PIN is how members log in now (lib/pin-login.ts), so turning it off
+    // would lock them out of their own account at the next sign-in. Staff are
+    // exempt: PIN login refuses their roles anyway, so for them it stays the
+    // optional app-lock it has always been.
+    if (isPinMandatoryRole(session.role)) {
+      return {
+        error:
+          "Your PIN is how you sign in, so it can't be turned off. Use “Change PIN” if you want a different one.",
+      };
     }
 
     // Money transfers require confirming with a password OR a PIN (see

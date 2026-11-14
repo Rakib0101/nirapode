@@ -1,10 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { createSession, getSession, markPinVerifiedAndUpdateSession } from "@/lib/session";
+import { createSession, deleteSession, getSession, markPinVerified, markPinVerifiedAndUpdateSession } from "@/lib/session";
 import { generateOTP, sendOTPEmail } from "@/lib/email";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
+import { rememberAccount, forgetAccount, getRememberedAccount } from "@/lib/remembered-account";
+import { verifyPinLogin, resetPinLockout, isPinLoginBlockedRole } from "@/lib/pin-login";
 import { notifyAdmin } from "@/lib/notifications";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
@@ -196,6 +198,7 @@ export async function verifyOtpAction(
         fullName: user.fullName,
         hasPin: false, // brand-new account, no PIN set yet
       });
+      await rememberAccount({ email: user.email, fullName: user.fullName });
 
       targetUrl = "/dashboard";
     }
@@ -316,6 +319,11 @@ export async function loginAction(
       { userId: user.id, role: user.role, email: user.email, fullName: user.fullName, hasPin: Boolean(user.pinHash) },
       rememberMe
     );
+    await rememberAccount({ email: user.email, fullName: user.fullName });
+    // A password login is proof of identity, so it also releases a PIN
+    // lockout — otherwise someone who fat-fingered their PIN ten times would
+    // have to go through the email reset even though they know their password.
+    await resetPinLockout(user.id);
 
     // Server Action redirects are soft client-side transitions and don't pass
     // back through the Proxy PIN gate for this one hop — send PIN-having
@@ -331,6 +339,120 @@ export async function loginAction(
 }
 
 // ─── Forgot Password ─────────────────────────────────────────────────────────
+
+// ─── Staff login ─────────────────────────────────────────────────────────────
+
+// Staff sign in here, with a password, never a PIN — four digits is not an
+// acceptable credential for an account that can approve deposits, withdrawals
+// and share transfers. The matching half of this rule is in lib/pin-login.ts,
+// which refuses PIN login for these roles outright.
+//
+// Lives at /admin-login rather than /admin/login because everything under
+// /admin is behind the admin layout's session guard, which would bounce an
+// anonymous visitor straight back here in a loop.
+export async function adminLoginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const email = (formData.get("email") as string)?.trim().toLowerCase();
+    const password = formData.get("password") as string;
+
+    if (!email || !password) return { error: "Please fill all fields." };
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        fullName: true,
+        passwordHash: true,
+        pinHash: true,
+        isActive: true,
+      },
+    });
+
+    // One message for every failure, so this page can't be used to work out
+    // which addresses belong to staff.
+    const rejection = { error: "Invalid email or password, or this account is not a staff account." };
+
+    if (!user?.passwordHash) return rejection;
+    if (!(await bcrypt.compare(password, user.passwordHash))) return rejection;
+    if (!isPinLoginBlockedRole(user.role)) return rejection;
+    if (!user.isActive) return { error: "Your account has been deactivated. Contact support." };
+
+    await createSession(
+      { userId: user.id, role: user.role, email: user.email, fullName: user.fullName, hasPin: Boolean(user.pinHash) },
+      false
+    );
+    // Deliberately no rememberAccount() here — a staff browser should keep
+    // showing the password form, not turn into somebody's PIN screen.
+
+    // Server Action redirects don't pass back through the Proxy PIN gate for
+    // this one hop, same as loginAction.
+    if (user.pinHash) redirect("/verify-pin?next=%2Fadmin");
+  } catch (err: unknown) {
+    if (isNextRedirect(err)) throw err;
+    console.error("Admin login error:", err);
+    return { error: err instanceof Error ? err.message : "Failed to sign in. Please try again." };
+  }
+
+  redirect("/admin");
+}
+
+// ─── PIN login ───────────────────────────────────────────────────────────────
+
+// The everyday login. The browser already remembers which account it belongs to
+// (lib/remembered-account.ts), so this asks for nothing but 4 digits — the
+// bKash-style flow the client asked for. All the brute-force handling lives in
+// lib/pin-login.ts, shared with the mobile endpoint.
+export async function pinLoginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const remembered = await getRememberedAccount();
+    if (!remembered) {
+      return { error: "This browser no longer remembers an account. Please sign in with your email." };
+    }
+
+    const pin = (formData.get("pin") as string)?.trim();
+    const result = await verifyPinLogin(remembered.email, pin);
+    if (!result.ok) return { error: result.error };
+
+    try {
+      await attachReferralFromCookie(result.user.id);
+    } catch (refErr) {
+      console.warn("Failed to attach referral on PIN login:", refErr);
+    }
+
+    // rememberMe-length session: reaching this screen at all means the device
+    // is one the user has already claimed as theirs.
+    await createSession(
+      {
+        userId: result.user.id,
+        role: result.user.role,
+        email: result.user.email,
+        fullName: result.user.fullName,
+        hasPin: true,
+      },
+      true
+    );
+    // They just typed the PIN — don't bounce them to the gate to type it again.
+    await markPinVerified(result.user.id);
+    // Refresh the stored name in case it changed since this browser last saw it.
+    await rememberAccount({ email: result.user.email, fullName: result.user.fullName });
+  } catch (err: unknown) {
+    if (isNextRedirect(err)) throw err;
+    console.error("PIN login error:", err);
+    return { error: err instanceof Error ? err.message : "Failed to sign in. Please try again." };
+  }
+
+  redirect("/dashboard");
+}
+
+// "Use another account" / "Not you?" — the only thing that makes the browser
+// forget the account, since plain logout deliberately keeps it.
+export async function useAnotherAccountAction(): Promise<void> {
+  await deleteSession();
+  await forgetAccount();
+  redirect("/login");
+}
 
 export async function forgotPasswordAction(
   _prev: ActionState,

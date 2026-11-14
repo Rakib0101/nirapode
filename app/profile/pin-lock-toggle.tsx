@@ -4,7 +4,10 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { disablePinAction, lockPinAction } from "@/app/actions/pin";
 
-export function PinLockToggle({ hasPin }: { hasPin: boolean }) {
+// `pinMandatory` is true for members, whose PIN is their login credential —
+// they get Change PIN instead of an on/off switch. Staff keep the old toggle,
+// since PIN login refuses their roles and it stays a plain app-lock for them.
+export function PinLockToggle({ hasPin, pinMandatory }: { hasPin: boolean; pinMandatory: boolean }) {
   const [state, action, pending] = useActionState(disablePinAction, null);
   const [confirmModal, setConfirmModal] = useState(false);
   const [pinVal, setPinVal] = useState("");
@@ -21,14 +24,16 @@ export function PinLockToggle({ hasPin }: { hasPin: boolean }) {
             hasPin ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
           }`}
         >
-          {hasPin ? "MODE: ON" : "MODE: OFF"}
+          {pinMandatory ? "ALWAYS ON" : hasPin ? "MODE: ON" : "MODE: OFF"}
         </span>
       </div>
 
       <p className="text-xs text-muted-foreground mb-4">
-        {hasPin
-          ? "App lock is active. Your account is protected by a 4-digit PIN every fresh session."
-          : "App lock is currently OFF. Turn it ON to require a 4-digit PIN whenever you open the app."}
+        {pinMandatory
+          ? "Your PIN is how you sign in and how you confirm wallet transfers, so it can't be switched off."
+          : hasPin
+            ? "App lock is active. Your account is protected by a 4-digit PIN every fresh session."
+            : "App lock is currently OFF. Turn it ON to require a 4-digit PIN whenever you open the app."}
       </p>
 
       {state?.error && (
@@ -46,13 +51,15 @@ export function PinLockToggle({ hasPin }: { hasPin: boolean }) {
             Change PIN
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setConfirmModal(true)}
-            className="text-xs font-semibold bg-red-50 text-red-600 border border-red-200 px-3.5 py-2 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
-          >
-            Turn OFF App Lock
-          </button>
+          {!pinMandatory && (
+            <button
+              type="button"
+              onClick={() => setConfirmModal(true)}
+              className="text-xs font-semibold bg-red-50 text-red-600 border border-red-200 px-3.5 py-2 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+            >
+              Turn OFF App Lock
+            </button>
+          )}
 
           <form action={lockPinAction}>
             <button

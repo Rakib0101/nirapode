@@ -9,12 +9,19 @@ import { REFERRAL_COOKIE_NAME, REFERRAL_COOKIE_MAX_AGE } from "@/lib/referral-co
 const PIN_GATE_EXEMPT = new Set([
   "/verify-pin",
   "/forgot-pin",
+  "/set-pin",
   "/login",
+  "/admin-login",
   "/register",
   "/verify-otp",
   "/forgot-password",
   "/reset-password",
 ]);
+
+// Staff keep the PIN optional: it's only ever an app-lock for them, since PIN
+// login refuses their roles outright (lib/pin-login.ts). Forcing it would be
+// friction with nothing to show for it.
+const PIN_OPTIONAL_ROLES = new Set(["SUPER_ADMIN", "ADMIN", "MODERATOR"]);
 
 // The mobile app authenticates with a Bearer token, not cookies, so there's
 // no CSRF/credential exposure from a wide-open origin here — unlike the rest
@@ -82,6 +89,18 @@ export default async function proxy(request: NextRequest) {
     // closing the browser naturally clears it and the gate re-fires next visit.
     if (!PIN_GATE_EXEMPT.has(request.nextUrl.pathname)) {
       const claims = await verifySessionToken(token);
+
+      // The PIN is how you log in now (see lib/pin-login.ts), so an account
+      // without one can't use the everyday login at all — it falls back to the
+      // email/password form forever. Members are sent to set one; the mobile
+      // app does the same in src/app/_layout.tsx.
+      if (claims && !claims.hasPin && !PIN_OPTIONAL_ROLES.has(claims.role)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/set-pin";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+
       if (claims?.hasPin) {
         const pinOk = request.cookies.get(PIN_COOKIE_NAME)?.value === claims.userId;
         if (!pinOk) {

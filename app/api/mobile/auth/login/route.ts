@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { issueMobileToken } from "@/lib/mobile-session";
+import { resetPinLockout } from "@/lib/pin-login";
 import bcrypt from "bcryptjs";
 
 // Mirrors app/actions/auth.ts loginAction. No "remember me" distinction here
@@ -48,6 +49,11 @@ export async function POST(req: Request) {
     } catch (refErr) {
       console.warn("Failed to attach referral on mobile login:", refErr);
     }
+
+    // A password login proves identity, so it releases any PIN lockout —
+    // otherwise a user who mistyped their PIN ten times would be stuck with
+    // the email reset even though they know their password.
+    await resetPinLockout(user.id);
 
     const hasPin = Boolean(user.pinHash);
     const token = await issueMobileToken({

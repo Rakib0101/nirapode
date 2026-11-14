@@ -139,74 +139,80 @@ enum ApplyStatus {
 // ─────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  fullName     String
-  nidNumber    String?  @unique
-  email        String   @unique
-  phone        String?
-  passwordHash String?
+  id                String    @id @default(cuid())
+  fullName          String
+  nidNumber         String?   @unique
+  email             String    @unique
+  phone             String?
+  passwordHash      String?
   // Separate from passwordHash — a quick 4-digit app-lock PIN, independent of
   // the account's real login password. Null means the user hasn't opted into
   // the app-lock gate (see lib/session.ts / middleware.ts).
-  pinHash      String?
-  googleId     String?  @unique
-  profilePhoto String?
-  role         Role     @default(USER)
-  isVerified   Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  isAgent      Boolean  @default(false)
-  referralCode String?  @unique
+  pinHash           String?
+  // Brute-force guard for PIN login. Since the PIN is a real login credential
+  // (email + 4 digits, see lib/pin-login.ts), an attacker who knows an email
+  // could otherwise walk all 10,000 combinations. Consecutive failures only —
+  // any successful PIN entry resets both back to 0/null.
+  pinFailedAttempts Int       @default(0)
+  pinLockedUntil    DateTime?
+  googleId          String?   @unique
+  profilePhoto      String?
+  role              Role      @default(USER)
+  isVerified        Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  isAgent           Boolean   @default(false)
+  referralCode      String?   @unique
   // Set once, permanently, the first time this user signs up or logs in
   // after clicking an agent's referral link — never overwritten afterward.
   // See lib/commission.ts attachReferralIfNeeded().
   referredByAgentId String?
-  referredByAgent   User?    @relation("AgentReferrals", fields: [referredByAgentId], references: [id])
-  referredUsers     User[]   @relation("AgentReferrals")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  referredByAgent   User?     @relation("AgentReferrals", fields: [referredByAgentId], references: [id])
+  referredUsers     User[]    @relation("AgentReferrals")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  otpTokens            OtpToken[]
-  wallet               Wallet?
-  sharePurchases       SharePurchaseRequest[]
-  referredSharePurchases SharePurchaseRequest[] @relation("SharePurchaseReferrer")
-  referredTaxiRequests   TaxiRequest[]          @relation("TaxiReferrer")
-  referredAirTicketRequests AirTicketRequest[]  @relation("AirTicketReferrer")
-  referredServiceRequests   ServiceRequest[]    @relation("ServiceReferrer")
-  shareListings        ShareListing[]
-  shareTrades          ShareTrade[]         @relation("BuyerTrades")
-  ownedShares          ShareOwnership[]
-  depositRequests      DepositRequest[]
-  withdrawalRequests   WithdrawalRequest[]
-  taxiRequests         TaxiRequest[]
-  managedTaxiRequests  TaxiRequest[]          @relation("TaxiManagerAssignment")
-  processedTaxiRequests TaxiRequest[]         @relation("TaxiProcessedBy")
-  airTicketRequests        AirTicketRequest[]
-  managedAirTicketRequests AirTicketRequest[] @relation("AirTicketManagerAssignment")
-  processedAirTicketRequests AirTicketRequest[] @relation("AirTicketProcessedBy")
-  checkouts            Checkout[]
-  createdCheckouts     Checkout[]             @relation("CheckoutCreatedBy")
-  processedCheckouts   Checkout[]             @relation("CheckoutProcessedBy")
-  serviceRequests      ServiceRequest[]
-  blogPosts            Blog[]
-  islamicArticles      IslamicArticle[]
-  pdfDocuments         PdfDocument[]
-  lostFoundPosts       LostFoundPost[]
-  notifications        Notification[]
-  auditLogs            AuditLog[]
-  applyApplications    ApplyApplication[]
-  shareCertificates    ShareCertificate[]
-  processedPurchases   SharePurchaseRequest[] @relation("PurchaseProcessor")
-  processedListings    ShareTrade[]           @relation("TradeProcessor")
-  processedDeposits    DepositRequest[]       @relation("DepositProcessor")
-  processedWithdrawals WithdrawalRequest[]    @relation("WithdrawalProcessor")
-  createdProjects      Project[]
-  buyRequests          ShareBuyRequest[]      @relation("BuyRequestBuyer")
-  processedBuyRequests ShareBuyRequest[]      @relation("BuyRequestProcessor")
-  referredBuyRequests  ShareBuyRequest[]      @relation("BuyRequestReferrer")
-  reminders            Reminder[]
-  productOrders        ProductOrder[]
-  forumTopics          ForumTopic[]
-  forumReplies         ForumReply[]
+  otpTokens                  OtpToken[]
+  wallet                     Wallet?
+  sharePurchases             SharePurchaseRequest[]
+  referredSharePurchases     SharePurchaseRequest[] @relation("SharePurchaseReferrer")
+  referredTaxiRequests       TaxiRequest[]          @relation("TaxiReferrer")
+  referredAirTicketRequests  AirTicketRequest[]     @relation("AirTicketReferrer")
+  referredServiceRequests    ServiceRequest[]       @relation("ServiceReferrer")
+  shareListings              ShareListing[]
+  shareTrades                ShareTrade[]           @relation("BuyerTrades")
+  ownedShares                ShareOwnership[]
+  depositRequests            DepositRequest[]
+  withdrawalRequests         WithdrawalRequest[]
+  taxiRequests               TaxiRequest[]
+  managedTaxiRequests        TaxiRequest[]          @relation("TaxiManagerAssignment")
+  processedTaxiRequests      TaxiRequest[]          @relation("TaxiProcessedBy")
+  airTicketRequests          AirTicketRequest[]
+  managedAirTicketRequests   AirTicketRequest[]     @relation("AirTicketManagerAssignment")
+  processedAirTicketRequests AirTicketRequest[]     @relation("AirTicketProcessedBy")
+  checkouts                  Checkout[]
+  createdCheckouts           Checkout[]             @relation("CheckoutCreatedBy")
+  processedCheckouts         Checkout[]             @relation("CheckoutProcessedBy")
+  serviceRequests            ServiceRequest[]
+  blogPosts                  Blog[]
+  islamicArticles            IslamicArticle[]
+  pdfDocuments               PdfDocument[]
+  lostFoundPosts             LostFoundPost[]
+  notifications              Notification[]
+  auditLogs                  AuditLog[]
+  applyApplications          ApplyApplication[]
+  shareCertificates          ShareCertificate[]
+  processedPurchases         SharePurchaseRequest[] @relation("PurchaseProcessor")
+  processedListings          ShareTrade[]           @relation("TradeProcessor")
+  processedDeposits          DepositRequest[]       @relation("DepositProcessor")
+  processedWithdrawals       WithdrawalRequest[]    @relation("WithdrawalProcessor")
+  createdProjects            Project[]
+  buyRequests                ShareBuyRequest[]      @relation("BuyRequestBuyer")
+  processedBuyRequests       ShareBuyRequest[]      @relation("BuyRequestProcessor")
+  referredBuyRequests        ShareBuyRequest[]      @relation("BuyRequestReferrer")
+  reminders                  Reminder[]
+  productOrders              ProductOrder[]
+  forumTopics                ForumTopic[]
+  forumReplies               ForumReply[]
   sentTransfers              WalletTransfer[]       @relation("TransferSender")
   receivedTransfers          WalletTransfer[]       @relation("TransferRecipient")
   pickPutTrips               PickPutTrip[]

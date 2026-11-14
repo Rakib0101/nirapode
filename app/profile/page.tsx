@@ -6,6 +6,7 @@ import { AvatarUpload } from "./avatar-upload";
 import { ReferralCard } from "./referral-card";
 import { EditProfileForm } from "./edit-profile-form";
 import { PinLockToggle } from "./pin-lock-toggle";
+import { isPinMandatoryRole } from "@/lib/pin-login";
 
 export default async function ProfilePage() {
 	const session = await getSession();
@@ -222,7 +223,7 @@ export default async function ProfilePage() {
 				</div>
 
 				{/* Security: 4-digit App Lock PIN Mode ON / OFF */}
-				<PinLockToggle hasPin={Boolean(user.pinHash)} />
+				<PinLockToggle hasPin={Boolean(user.pinHash)} pinMandatory={isPinMandatoryRole(user.role)} />
 			</div>
 		</div>
 	);
