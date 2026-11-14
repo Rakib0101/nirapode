@@ -248,9 +248,13 @@ export default async function AdminDashboard() {
               <svg className="w-4 h-4 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
             </Link>
           )}
+          {/* Share 4 buy requests are reviewed on /admin/purchases, not
+              /admin/shares (which only handles Share 6 listings & trades).
+              The Purchases badge already counts them — see
+              pendingCounts.purchases in app/admin/layout.tsx. */}
           {stats.pendingBuyRequests > 0 && (
             <Link
-              href="/admin/shares"
+              href="/admin/purchases"
               className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-xl px-4 py-3.5 hover:bg-purple-100 active:scale-[.99] transition-all"
             >
               <div className="flex items-center gap-3">
@@ -259,7 +263,7 @@ export default async function AdminDashboard() {
                   <p className="text-sm font-semibold text-purple-900">
                     {stats.pendingBuyRequests} Share 4 buy request{stats.pendingBuyRequests > 1 ? "s" : ""}
                   </p>
-                  <p className="text-xs text-purple-700">Tap to review in Share Management</p>
+                  <p className="text-xs text-purple-700">Tap to review in Purchases</p>
                 </div>
               </div>
               <svg className="w-4 h-4 text-purple-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
