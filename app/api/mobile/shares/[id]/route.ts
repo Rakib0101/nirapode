@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     });
     if (!project) return Response.json({ error: "Project not found or no longer active." }, { status: 404 });
 
-    const [myOwnership, pendingRequest, availableCerts] = await Promise.all([
+    const [myOwnership, pendingRequest, availableCerts, sharer] = await Promise.all([
       prisma.shareOwnership.findUnique({
         where: { projectId_ownerId: { projectId: id, ownerId: session.userId } },
         select: { quantity: true, purchasePrice: true },
@@ -35,6 +35,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         orderBy: { shareNumber: "asc" },
         select: { shareNumber: true, priceSgd: true },
       }),
+      // Only agents get a referral code baked into a shared link.
+      prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { isAgent: true, referralCode: true },
+      }),
     ]);
 
     const projectSharePrice = Number(project.sharePriceSgd);
@@ -45,6 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       description: project.description,
       imageUrl: project.imageUrl,
       createdBy: project.createdBy.fullName,
+      referralCode: sharer?.isAgent ? sharer.referralCode : null,
       sharePrice: projectSharePrice,
       totalShares: project.totalShares,
       availableShares: project.availableShares,

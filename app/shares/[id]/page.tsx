@@ -5,6 +5,7 @@ import { ShareholdersChart } from "@/components/shareholders-chart";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PurchaseForm } from "./purchase-form";
+import { ShareProject } from "@/components/share-project";
 
 async function getProject(id: string) {
   return prisma.project.findUnique({
@@ -72,6 +73,16 @@ export default async function ShareDetailPage({
       ])
     : [null, null];
 
+  // Agents sharing a project get their referral code baked into the link, so
+  // anyone who signs up from it is credited to them (proxy.ts captures ?ref=
+  // on any page). Non-agents share a plain link.
+  const sharer = session
+    ? await prisma.user
+        .findUnique({ where: { id: session.userId }, select: { isAgent: true, referralCode: true } })
+        .catch(() => null)
+    : null;
+  const referralCode = sharer?.isAgent ? sharer.referralCode : null;
+
   return (
     <div className="min-h-screen bg-muted">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -103,6 +114,14 @@ export default async function ShareDetailPage({
                 <p className="text-xs text-muted-foreground mt-3">
                   Created by <span className="font-medium text-foreground">{project.createdBy.fullName}</span>
                 </p>
+
+                <div className="mt-5 pt-5 border-t border-border">
+                  <ShareProject
+                    projectName={project.name}
+                    sharePrice={Number(project.sharePriceSgd)}
+                    referralCode={referralCode}
+                  />
+                </div>
               </div>
 
               {/* Stats row */}
