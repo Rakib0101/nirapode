@@ -517,7 +517,8 @@ export function Navbar({
 								Login
 							</Link>
 						)}
-						<MainNavMenu groups={groups} />
+						{/* No menu button here — on a phone the menu is the bottom bar
+						    (components/bottom-nav.tsx), within thumb reach. */}
 					</div>
 
 					{/* Desktop right side */}

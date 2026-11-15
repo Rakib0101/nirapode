@@ -179,7 +179,7 @@ export function ServiceRequestForm({ services }: { services: Service[] }) {
       )}
 
       {state?.success && (
-        <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg flex items-center gap-2">
+        <div className="fixed bottom-20 xl:bottom-6 right-6 z-50 bg-green-500 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>

@@ -195,7 +195,7 @@ export function ApplyForm({ services }: { services: Service[] }) {
       )}
 
       {state?.success && (
-        <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg">
+        <div className="fixed bottom-20 xl:bottom-6 right-6 z-50 bg-green-500 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg">
           Application submitted successfully!
         </div>
       )}

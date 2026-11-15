@@ -50,7 +50,7 @@ export function InstallPwaButton() {
     <button
       type="button"
       onClick={handleInstall}
-      className="fixed bottom-20 sm:bottom-6 left-4 sm:left-6 z-50 flex items-center gap-2 bg-brand text-white text-xs font-semibold pl-3 pr-4 py-3 rounded-full shadow-xl hover:bg-brand-dark hover:scale-105 transition-all duration-200 cursor-pointer"
+      className="fixed bottom-20 xl:bottom-6 left-4 sm:left-6 z-50 flex items-center gap-2 bg-brand text-white text-xs font-semibold pl-3 pr-4 py-3 rounded-full shadow-xl hover:bg-brand-dark hover:scale-105 transition-all duration-200 cursor-pointer"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V4m0 12l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />

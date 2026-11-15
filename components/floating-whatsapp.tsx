@@ -15,7 +15,7 @@ export function FloatingWhatsApp({ whatsappNumber, defaultMessage }: FloatingWha
   const link = formatWhatsAppLink(number, msg);
 
   return (
-    <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-20 xl:bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end">
       {isOpen && (
         <div className="mb-3 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-border p-4 transition-all duration-200 animate-in fade-in slide-in-from-bottom-3">
           <div className="flex items-center justify-between border-b border-border pb-3 mb-3">
