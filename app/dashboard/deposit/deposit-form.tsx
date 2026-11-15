@@ -1,5 +1,7 @@
 "use client";
 
+import { uploadImageFile } from "@/lib/upload-client";
+
 import { useActionState, useRef, useState } from "react";
 import { requestDepositAction } from "@/app/actions/deposits";
 import Link from "next/link";
@@ -170,16 +172,20 @@ export function DepositForm({ accounts, defaultAmount }: { accounts: PaymentAcco
                 setScreenshotError(null);
                 const file = e.target.files?.[0];
                 if (!file) return;
-                if (file.size > 3 * 1024 * 1024) {
-                  setScreenshotError("Image must be under 3 MB.");
-                  return;
-                }
-                const reader = new FileReader();
-                reader.onload = () => {
-                  setScreenshotBase64(reader.result as string);
-                  setScreenshotName(file.name);
-                };
-                reader.readAsDataURL(file);
+                // Uploaded here, not at submit: the form then carries a short
+                // storage ref instead of megabytes of base64, and an oversized
+                // file is rejected while the user is still looking at the picker.
+                setScreenshotName("Uploading…");
+                uploadImageFile(file, "deposit")
+                  .then((ref) => {
+                    setScreenshotBase64(ref);
+                    setScreenshotName(file.name);
+                  })
+                  .catch((err: unknown) => {
+                    setScreenshotBase64(null);
+                    setScreenshotName(null);
+                    setScreenshotError(err instanceof Error ? err.message : "Upload failed.");
+                  });
               }}
             />
             <button

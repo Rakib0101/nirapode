@@ -4,10 +4,11 @@ import { useActionState, useState, Suspense } from "react";
 import { requestPinResetOtpAction, confirmPinResetAction } from "@/app/actions/pin";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 
 function ForgotPinForm() {
   const params = useSearchParams();
-  const next = params.get("next") ?? "/dashboard";
+  const next = params.get("next") ?? POST_LOGIN_PATH;
 
   const [requestState, requestAction, requestPending] = useActionState(requestPinResetOtpAction, null);
   const [confirmState, confirmAction, confirmPending] = useActionState(confirmPinResetAction, null);

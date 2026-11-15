@@ -6,6 +6,7 @@ import { generateOTP, sendOTPEmail } from "@/lib/email";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
 import { rememberAccount, forgetAccount, getRememberedAccount } from "@/lib/remembered-account";
+import { POST_LOGIN_PATH, POST_LOGIN_PATH_ENCODED, POST_LOGIN_PATH_STAFF } from "@/lib/auth-redirects";
 import { verifyPinLogin, resetPinLockout, isPinLoginBlockedRole } from "@/lib/pin-login";
 import { notifyAdmin } from "@/lib/notifications";
 import bcrypt from "bcryptjs";
@@ -200,7 +201,7 @@ export async function verifyOtpAction(
       });
       await rememberAccount({ email: user.email, fullName: user.fullName });
 
-      targetUrl = "/dashboard";
+      targetUrl = POST_LOGIN_PATH;
     }
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
@@ -328,14 +329,14 @@ export async function loginAction(
     // Server Action redirects are soft client-side transitions and don't pass
     // back through the Proxy PIN gate for this one hop — send PIN-having
     // users straight to the gate instead of relying on the next navigation.
-    if (user.pinHash) redirect("/verify-pin?next=%2Fdashboard");
+    if (user.pinHash) redirect(`/verify-pin?next=${POST_LOGIN_PATH_ENCODED}`);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
     console.error("Login action error:", err);
     return { error: err instanceof Error ? err.message : "Failed to sign in. Please try again." };
   }
 
-  redirect("/dashboard");
+  redirect(POST_LOGIN_PATH);
 }
 
 // ─── Forgot Password ─────────────────────────────────────────────────────────
@@ -388,14 +389,14 @@ export async function adminLoginAction(_prev: ActionState, formData: FormData): 
 
     // Server Action redirects don't pass back through the Proxy PIN gate for
     // this one hop, same as loginAction.
-    if (user.pinHash) redirect("/verify-pin?next=%2Fadmin");
+    if (user.pinHash) redirect(`/verify-pin?next=${encodeURIComponent(POST_LOGIN_PATH_STAFF)}`);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
     console.error("Admin login error:", err);
     return { error: err instanceof Error ? err.message : "Failed to sign in. Please try again." };
   }
 
-  redirect("/admin");
+  redirect(POST_LOGIN_PATH_STAFF);
 }
 
 // ─── PIN login ───────────────────────────────────────────────────────────────
@@ -443,7 +444,7 @@ export async function pinLoginAction(_prev: ActionState, formData: FormData): Pr
     return { error: err instanceof Error ? err.message : "Failed to sign in. Please try again." };
   }
 
-  redirect("/dashboard");
+  redirect(POST_LOGIN_PATH);
 }
 
 // "Use another account" / "Not you?" — the only thing that makes the browser

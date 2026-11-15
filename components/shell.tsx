@@ -10,6 +10,11 @@ import type { SiteContactSettings } from "@/lib/site-contact-types";
 
 const AUTH_PATHS = ["/login", "/register", "/verify-otp", "/forgot-password", "/reset-password", "/set-pin", "/verify-pin", "/forgot-pin", "/admin"];
 
+// Pages that take over the whole screen. The MRT map is a pan-and-zoom
+// canvas — every pixel of navbar, rate bar and footer above it is a pixel
+// of map you cannot see. They carry their own way back instead.
+const FULLSCREEN_PATHS = ["/mrt-map"];
+
 type ShellProps = {
   children: React.ReactNode;
   user: SessionPayload | null;
@@ -23,8 +28,9 @@ export function Shell({ children, user, rateBar, walletBalance, pendingCheckout,
   const pathname = usePathname();
 
   const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isFullscreen = FULLSCREEN_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
-  if (isAuth) return <>{children}</>;
+  if (isAuth || isFullscreen) return <>{children}</>;
 
   return (
     <>

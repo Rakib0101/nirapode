@@ -4,6 +4,7 @@ import { CreateProjectForm } from "./create-form";
 import { ResellActions } from "./resell-actions";
 import { ResetDemoSharesButton } from "@/components/reset-demo-shares-button";
 import Link from "next/link";
+import { DeleteShareRecordButton } from "@/components/delete-share-record-button";
 
 async function getData() {
   const [projects, pendingListings, pendingTrades] = await Promise.all([
@@ -102,7 +103,10 @@ export default async function AdminSharesPage() {
                       </p>
                     )}
                   </div>
-                  <ResellActions listingId={l.id} type="listing" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ResellActions listingId={l.id} type="listing" />
+                    <DeleteShareRecordButton kind="listing" id={l.id} what={`this listing for ${l.project.name}`} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -138,7 +142,10 @@ export default async function AdminSharesPage() {
                       {t.txId && <span>TXN: <strong className="text-foreground font-mono">{t.txId}</strong></span>}
                     </div>
                   </div>
-                  <ResellActions tradeId={t.id} type="trade" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ResellActions tradeId={t.id} type="trade" />
+                    <DeleteShareRecordButton kind="trade" id={t.id} what={`this trade on ${t.listing.project.name}`} />
+                  </div>
                 </div>
               </div>
             ))}

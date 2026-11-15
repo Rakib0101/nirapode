@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notifyAdmin } from "@/lib/notifications";
 import { z } from "zod";
+import { isValidImageRef } from "@/lib/storage";
 
 // Mirrors app/actions/checkout.ts submitCheckoutPaymentAction exactly,
 // including its lack of an auth/ownership check — on the web this is a
@@ -9,7 +10,7 @@ import { z } from "zod";
 const proofSchema = z.object({
   paymentMethod: z.enum(["BANK_TRANSFER", "BKASH", "NAGAD", "ROCKET", "GCASH", "PAYNOW"]),
   txId: z.string().optional(),
-  screenshotUrl: z.string().optional(),
+  screenshotUrl: z.string().refine(isValidImageRef, "Invalid screenshot.").optional(),
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {

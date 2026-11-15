@@ -4,10 +4,11 @@ import { useActionState, useState, Suspense } from "react";
 import { verifyPinAction } from "@/app/actions/pin";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 
 function VerifyPinForm() {
   const params = useSearchParams();
-  const next = params.get("next") ?? "/dashboard";
+  const next = params.get("next") ?? POST_LOGIN_PATH;
 
   const [state, action, pending] = useActionState(verifyPinAction, null);
   const [pin, setPin] = useState("");

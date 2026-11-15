@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { getCommissionSetting, computeCommissionAmount, getPlatformCutSetting } from "@/lib/commission";
 import { getShareSgdRate } from "@/lib/share-pricing";
-import { ProcessPurchaseForm } from "./process-form";
-import { ScreenshotViewerModal } from "@/components/screenshot-modal";
 import { ResellActions } from "@/app/admin/shares/resell-actions";
+import { StoredScreenshot, StoredProcessPurchaseForm } from "@/components/stored-screenshot";
+import { DeleteShareRecordButton } from "@/components/delete-share-record-button";
 
 async function getPurchaseRequests() {
   return prisma.sharePurchaseRequest.findMany({
@@ -107,7 +107,10 @@ export default async function AdminPurchasesPage() {
                       )}
                     </p>
                   </div>
-                  <ResellActions buyRequestId={r.id} type="buyRequest" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ResellActions buyRequestId={r.id} type="buyRequest" />
+                    <DeleteShareRecordButton kind="buyRequest" id={r.id} what={`the buy request from ${r.buyer.fullName}`} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -177,7 +180,7 @@ export default async function AdminPurchasesPage() {
                     )}
                     {r.screenshotUrl && (
                       <div className="mt-1">
-                        <ScreenshotViewerModal url={r.screenshotUrl} label="📎 Screenshot" />
+                        <StoredScreenshot value={r.screenshotUrl} label="📎 Screenshot" />
                       </div>
                     )}
                   </td>
@@ -194,12 +197,19 @@ export default async function AdminPurchasesPage() {
                   </td>
                   <td className="px-4 py-3.5">
                     {r.status === "PENDING" && (
-                      <ProcessPurchaseForm
+                      <StoredProcessPurchaseForm
                         requestId={r.id}
                         txId={r.txId ?? null}
-                        screenshotUrl={r.screenshotUrl ?? null}
+                        screenshotValue={r.screenshotUrl ?? null}
                       />
                     )}
+                    <div className="mt-2">
+                      <DeleteShareRecordButton
+                        kind="purchaseRequest"
+                        id={r.id}
+                        what={`this purchase request from ${r.buyer.fullName}`}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

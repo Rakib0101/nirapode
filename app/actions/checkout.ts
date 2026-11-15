@@ -8,6 +8,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { creditCommission } from "@/lib/commission";
 import { notifyAdmin, notifyUser } from "@/lib/notifications";
+import { isValidImageRef } from "@/lib/storage";
 
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -268,7 +269,9 @@ export async function deleteCheckoutAction(checkoutId: string): Promise<{ error?
 const proofSchema = z.object({
   paymentMethod: z.enum(["BANK_TRANSFER", "BKASH", "NAGAD", "ROCKET", "GCASH", "PAYNOW"]),
   txId: z.string().optional(),
-  screenshotUrl: z.string().optional(),
+  // Must be one of ours: a storage ref, or a legacy inline data URL.
+  // Previously unvalidated, which let any string land in the column.
+  screenshotUrl: z.string().refine(isValidImageRef, "Invalid screenshot.").optional(),
 });
 
 type ProofState = { error?: string; success?: boolean } | null;

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AddProductForm, ProductRow, OrderStatusButtons } from "./product-forms";
+import { mediaUrl } from "@/lib/storage";
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-700",
@@ -70,6 +71,9 @@ export default async function AdminProductsPage() {
                     name: p.name,
                     description: p.description,
                     imageUrl: p.imageUrl,
+                    // Resolved here: ProductRow is a client component and
+                    // can't read SUPABASE_URL to build the public URL itself.
+                    imageUrlResolved: mediaUrl(p.imageUrl),
                     price: Number(p.price),
                     stock: p.stock,
                     isActive: p.isActive,

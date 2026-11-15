@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
 import { rememberAccount } from "@/lib/remembered-account";
 import { resetPinLockout } from "@/lib/pin-login";
+import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 import { issueMobileToken } from "@/lib/mobile-session";
 import { attachReferralIfNeeded } from "@/lib/commission";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referral-constants";
@@ -151,7 +152,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const targetPath = shouldPromptPin ? "/set-pin" : "/dashboard";
+  const targetPath = shouldPromptPin ? "/set-pin" : POST_LOGIN_PATH;
   const response = NextResponse.redirect(new URL(targetPath, req.url));
   if (refCode) response.cookies.delete(REFERRAL_COOKIE_NAME);
   return response;

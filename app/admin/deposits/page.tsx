@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ProcessDepositForm } from "./process-form";
-import { ScreenshotViewerModal } from "@/components/screenshot-modal";
+import { StoredScreenshot } from "@/components/stored-screenshot";
 
 async function getDeposits() {
   return prisma.depositRequest.findMany({
@@ -61,7 +61,7 @@ export default async function AdminDepositsPage() {
                     {d.txId ? <p className="font-mono text-muted-foreground">{d.txId}</p> : <span className="text-muted-foreground">—</span>}
                     {d.screenshotUrl && (
                       <div className="mt-1">
-                        <ScreenshotViewerModal url={d.screenshotUrl} label="📎 Screenshot" />
+                        <StoredScreenshot value={d.screenshotUrl} label="📎 Screenshot" />
                       </div>
                     )}
                   </td>

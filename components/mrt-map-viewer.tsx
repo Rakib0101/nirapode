@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 export function MRTMapViewer({ onClose }: { onClose?: () => void }) {
   const [scale, setScale] = useState(1);
@@ -98,6 +99,20 @@ export function MRTMapViewer({ onClose }: { onClose?: () => void }) {
       {/* Viewer Floating Controls Bar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shrink-0 z-10">
         <div className="flex items-center gap-2">
+          {/* Full-screen means no navbar, so the only way out has to live
+              here. The modal has its own close button (see onClose). */}
+          {!onClose && (
+            <Link
+              href="/"
+              aria-label="Back"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 mr-1 text-xs font-semibold text-slate-200 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </Link>
+          )}
           <span className="text-xs font-semibold text-slate-300 hidden sm:inline">
             Zoom: {Math.round(scale * 100)}%
           </span>

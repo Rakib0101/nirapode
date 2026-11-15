@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { BalanceCard } from "@/components/balance-card";
+import { mediaUrl } from "@/lib/storage";
 
 // GCash-style signed-in home: balance up top, an icon grid of the actions
 // people actually open the app for, then content rows. Rendered at / for
@@ -206,7 +207,7 @@ export async function SignedInHome({ userId, fullName }: { userId: string; fullN
                         {p.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={p.imageUrl}
+                            src={mediaUrl(p.imageUrl) ?? ""}
                             alt={p.name}
                             className="h-28 sm:h-36 w-full rounded-2xl object-cover border border-border"
                           />
@@ -258,14 +259,14 @@ export async function SignedInHome({ userId, fullName }: { userId: string; fullN
                 >
                   {d.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={d.imageUrl} alt={d.name} className="w-full h-36 sm:h-44 object-cover" />
+                    <img src={mediaUrl(d.imageUrl) ?? ""} alt={d.name} className="w-full h-36 sm:h-44 object-cover" />
                   ) : (
                     <div className="w-full h-36 sm:h-44 bg-gradient-to-br from-brand to-brand-dark" />
                   )}
                   <div className="px-4 py-3">
                     <p className="font-semibold text-foreground text-sm">{d.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      S${Number(d.sharePriceSgd).toFixed(2)} per share
+                      ৳{Number(d.sharePriceSgd).toFixed(2)} per share
                     </p>
                   </div>
                 </Link>

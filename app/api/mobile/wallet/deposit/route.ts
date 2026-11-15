@@ -2,13 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { getMobileSession, unauthorizedJson } from "@/lib/mobile-session";
 import { notifyAdmin } from "@/lib/notifications";
 import { z } from "zod";
+import { isValidImageRef } from "@/lib/storage";
 
 // Mirrors app/actions/deposits.ts requestDepositAction.
 const depositSchema = z.object({
   amount: z.coerce.number().min(10, "Minimum deposit is ৳10"),
   paymentMethod: z.enum(["BANK_TRANSFER", "BKASH", "NAGAD", "ROCKET", "GCASH", "PAYNOW"]),
   txId: z.string().optional(),
-  screenshotUrl: z.string().optional(),
+  screenshotUrl: z.string().refine(isValidImageRef, "Invalid screenshot.").optional(),
 });
 
 export async function POST(req: Request) {

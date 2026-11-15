@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { mediaUrl } from "@/lib/storage";
 
 export const metadata = {
   title: "Products — Nirapode",
@@ -45,7 +46,7 @@ export default async function ProductsPage() {
                 >
                   {p.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-36 sm:h-44 object-cover" />
+                    <img src={mediaUrl(p.imageUrl) ?? ""} alt={p.name} className="w-full h-36 sm:h-44 object-cover" />
                   ) : (
                     <div className="w-full h-36 sm:h-44 bg-gradient-to-br from-brand to-brand-dark" />
                   )}

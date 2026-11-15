@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { getListingRemainingCount } from "@/lib/share-listings";
 import Link from "next/link";
 import { SecondaryMarket } from "./secondary-market";
+import { mediaUrl } from "@/lib/storage";
 
 async function getPrimaryData() {
   return prisma.project.findMany({
@@ -133,7 +134,7 @@ export default async function SharesPage({
                     <div key={project.id} className="bg-white rounded-2xl border border-border overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                       {project.imageUrl ? (
                         <div className="relative h-40 overflow-hidden">
-                          <img src={project.imageUrl} alt={project.name} className="w-full h-full object-cover" />
+                          <img src={mediaUrl(project.imageUrl) ?? ""} alt={project.name} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
                           <span className="absolute top-3 right-3 text-xs font-semibold text-green-700 bg-green-100 px-2.5 py-1 rounded-full">Active</span>
                           <div className="absolute bottom-0 left-0 px-5 pb-4">

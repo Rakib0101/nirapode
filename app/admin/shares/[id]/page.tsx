@@ -6,6 +6,7 @@ import { ScreenshotViewer } from "./screenshot-viewer";
 import { ShareNumbersManager } from "./share-numbers";
 import { ProjectActions } from "./project-actions";
 import { ShareholdersChart } from "./shareholders-chart";
+import { StoredScreenshotViewer } from "@/components/stored-screenshot";
 
 async function getProjectDetail(id: string) {
   return prisma.project.findUnique({
@@ -312,7 +313,7 @@ export default async function AdminProjectDetailPage({
                         <p className="text-[11px] font-mono text-muted-foreground break-all">{r.txId}</p>
                       )}
                       {r.screenshotUrl && (
-                        <ScreenshotViewer src={r.screenshotUrl} />
+                        <StoredScreenshotViewer value={r.screenshotUrl} />
                       )}
                       {!r.txId && !r.screenshotUrl && (
                         <span className="text-[11px] text-muted-foreground italic">—</span>

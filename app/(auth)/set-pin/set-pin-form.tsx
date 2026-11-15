@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { setPinAction } from "@/app/actions/auth";
 import Link from "next/link";
+import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 
 export function SetPinForm({ pinMandatory }: { pinMandatory: boolean }) {
   const [state, action, pending] = useActionState(setPinAction, null);
@@ -90,10 +91,10 @@ export function SetPinForm({ pinMandatory }: { pinMandatory: boolean }) {
         {!pinMandatory && (
           <div className="text-center pt-2">
             <Link
-              href="/dashboard"
+              href={POST_LOGIN_PATH}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors hover:underline"
             >
-              Skip for now & go to dashboard →
+              Skip for now →
             </Link>
           </div>
         )}

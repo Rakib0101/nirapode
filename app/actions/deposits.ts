@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { notifyAdmin } from "@/lib/notifications";
+import { isValidImageRef } from "@/lib/storage";
 
 type ActionState = { error?: string; success?: boolean } | null;
 
@@ -13,7 +14,9 @@ const depositSchema = z.object({
   amount: z.coerce.number().min(10, "Minimum deposit is ৳10"),
   paymentMethod: z.enum(["BANK_TRANSFER", "BKASH", "NAGAD", "ROCKET", "GCASH", "PAYNOW"]),
   txId: z.string().optional(),
-  screenshotUrl: z.string().optional(),
+  // Must be one of ours: a storage ref, or a legacy inline data URL.
+  // Previously unvalidated, which let any string land in the column.
+  screenshotUrl: z.string().refine(isValidImageRef, "Invalid screenshot.").optional(),
 });
 
 export async function requestDepositAction(

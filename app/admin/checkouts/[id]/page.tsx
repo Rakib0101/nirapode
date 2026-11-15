@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GenerateLinkButton, PaymentLinkCard, ReviewActions, DeleteCheckoutButton } from "./checkout-detail-actions";
-import { ScreenshotViewerModal } from "@/components/screenshot-modal";
+import { StoredScreenshot } from "@/components/stored-screenshot";
 
 async function getCheckout(id: string) {
   return prisma.checkout.findUnique({
@@ -123,7 +123,7 @@ export default async function AdminCheckoutDetailPage({
           {checkout.txId && <p className="text-sm text-foreground">Transaction ID: <span className="font-mono">{checkout.txId}</span></p>}
           {checkout.screenshotUrl && (
             <div>
-              <ScreenshotViewerModal url={checkout.screenshotUrl} label="📎 View Payment Screenshot" />
+              <StoredScreenshot value={checkout.screenshotUrl} label="📎 View Payment Screenshot" />
             </div>
           )}
           {checkout.adminNote && <p className="text-sm text-muted-foreground">Note: {checkout.adminNote}</p>}

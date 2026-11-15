@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import Link from "next/link";
+import { mediaUrl } from "@/lib/storage";
 
 const CATEGORIES = ["All", "General", "Jobs & Career", "Transport & Housing", "Remittance & Finance", "Legal & Visa"];
 
@@ -99,7 +100,7 @@ export default async function ForumPage({
                   </div>
 
                   {t.imageUrl && (
-                    <img src={t.imageUrl} alt="" className="w-16 h-16 rounded-lg border border-border object-cover shrink-0" />
+                    <img src={mediaUrl(t.imageUrl) ?? ""} alt="" className="w-16 h-16 rounded-lg border border-border object-cover shrink-0" />
                   )}
 
                   <div className="flex items-center gap-3 shrink-0 text-muted-foreground text-xs pt-1">

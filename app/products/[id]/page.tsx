@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { OrderForm } from "./order-form";
+import { mediaUrl } from "@/lib/storage";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,7 +40,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <div className="bg-white rounded-2xl border border-border overflow-hidden">
               {product.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={product.imageUrl} alt={product.name} className="w-full h-72 sm:h-96 object-cover" />
+                <img src={mediaUrl(product.imageUrl) ?? ""} alt={product.name} className="w-full h-72 sm:h-96 object-cover" />
               ) : (
                 <div className="w-full h-72 sm:h-96 bg-gradient-to-br from-brand to-brand-dark" />
               )}

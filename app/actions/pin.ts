@@ -11,6 +11,7 @@ import {
 } from "@/lib/session";
 import { getRememberedAccount, rememberAccount } from "@/lib/remembered-account";
 import { findPinResetTarget, isPinMandatoryRole, type PinLoginUser } from "@/lib/pin-login";
+import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 import { generateOTP, sendOTPEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
@@ -37,7 +38,7 @@ function isNextRedirect(err: unknown): boolean {
 // (which `next` as a raw query param could otherwise be used for).
 function safeNext(raw: FormDataEntryValue | null): string {
   const value = typeof raw === "string" ? raw : "";
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+  return value.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH;
 }
 
 // ─── Verify PIN (the app-lock gate) ────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { isValidImageRef } from "@/lib/storage";
 
 async function requireUser() {
   const session = await getSession();
@@ -12,15 +13,20 @@ async function requireUser() {
   return session;
 }
 
-// Client caps uploads at 2MB, but base64 inflates size ~33% and a malicious
-// client could skip that check entirely — enforce the real ceiling here too.
+// New uploads arrive as a short "storage:bucket/path" ref (see lib/storage.ts);
+// the size limit is enforced by the upload endpoint and the bucket itself.
+// Posts made before that still hold a base64 data URL inline, so those are
+// still accepted — and still capped, since base64 inflates size ~33% and a
+// malicious client could skip the browser-side check entirely.
 const MAX_IMAGE_DATA_URL_LENGTH = 3_000_000;
 
 function parseImageUrl(raw: FormDataEntryValue | null): { imageUrl: string | null; error?: string } {
   const value = typeof raw === "string" ? raw.trim() : "";
   if (!value) return { imageUrl: null };
-  if (!value.startsWith("data:image/")) return { imageUrl: null, error: "Invalid image." };
-  if (value.length > MAX_IMAGE_DATA_URL_LENGTH) return { imageUrl: null, error: "Image is too large." };
+  if (!isValidImageRef(value)) return { imageUrl: null, error: "Invalid image." };
+  if (value.startsWith("data:") && value.length > MAX_IMAGE_DATA_URL_LENGTH) {
+    return { imageUrl: null, error: "Image is too large." };
+  }
   return { imageUrl: value };
 }
 

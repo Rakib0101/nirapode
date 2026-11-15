@@ -18,6 +18,7 @@ type Product = {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  imageUrlResolved?: string | null;
   price: number;
   stock: number | null;
   isActive: boolean;
@@ -69,7 +70,7 @@ export function AddProductForm() {
         </div>
         <div className="sm:col-span-2">
           <label className="block text-xs font-semibold text-foreground mb-1.5">Product Photo</label>
-          <ImageUploadField name="imageUrl" label="Add Product Photo" />
+          <ImageUploadField name="imageUrl" label="Add Product Photo" purpose="product" />
         </div>
       </div>
 
@@ -97,7 +98,7 @@ export function ProductRow({ product }: { product: Product }) {
       <div className="flex items-start gap-4 p-4">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.imageUrl} alt={product.name} className="w-20 h-20 rounded-xl object-cover border border-border shrink-0" />
+          <img src={product.imageUrlResolved ?? ""} alt={product.name} className="w-20 h-20 rounded-xl object-cover border border-border shrink-0" />
         ) : (
           <div className="w-20 h-20 rounded-xl bg-muted border border-border shrink-0" />
         )}
@@ -172,7 +173,7 @@ export function ProductRow({ product }: { product: Product }) {
             </div>
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-foreground mb-1.5">Product Photo</label>
-              <ImageUploadField name="imageUrl" label="Change Photo" defaultPreview={product.imageUrl} />
+              <ImageUploadField name="imageUrl" label="Change Photo" purpose="product" defaultPreview={product.imageUrlResolved ?? null} />
             </div>
           </div>
 

@@ -838,3 +838,44 @@ export async function resetDemoSharesAction(): Promise<{ error?: string; success
     return { error: msg };
   }
 }
+
+// Per-record deletion, because the only way to remove demo data used to be
+// resetDemoSharesAction — which empties every share table at once. An admin
+// clearing one bad test row had no option but to wipe the lot.
+export type DeletableShareRecord =
+  | "purchaseRequest"
+  | "buyRequest"
+  | "listing"
+  | "trade"
+  | "certificate"
+  | "ownership";
+
+export async function deleteShareRecordAction(
+  kind: DeletableShareRecord,
+  id: string
+): Promise<{ error?: string; success?: boolean }> {
+  await requireAdmin();
+
+  try {
+    // A switch rather than a lookup table: Prisma's per-model delete signatures
+    // don't unify, so indexing into a map of them isn't callable.
+    switch (kind) {
+      case "purchaseRequest": await prisma.sharePurchaseRequest.delete({ where: { id } }); break;
+      case "buyRequest":      await prisma.shareBuyRequest.delete({ where: { id } }); break;
+      case "listing":         await prisma.shareListing.delete({ where: { id } }); break;
+      case "trade":           await prisma.shareTrade.delete({ where: { id } }); break;
+      case "certificate":     await prisma.shareCertificate.delete({ where: { id } }); break;
+      case "ownership":       await prisma.shareOwnership.delete({ where: { id } }); break;
+      default:                return { error: "Unknown record type." };
+    }
+  } catch (err: unknown) {
+    console.error("Delete share record failed:", err);
+    // Usually a row another record still points at, e.g. a listing with trades.
+    return { error: "Could not delete that record. It may still be referenced by another." };
+  }
+
+  revalidatePath("/admin/shares");
+  revalidatePath("/admin/purchases");
+  revalidatePath("/shares");
+  return { success: true };
+}

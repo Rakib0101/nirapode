@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ReplyForm } from "./reply-form";
+import { mediaUrl } from "@/lib/storage";
 
 export default async function TopicDetailPage({
   params,
@@ -70,7 +71,7 @@ export default async function TopicDetailPage({
             {topic.content}
           </div>
           {topic.imageUrl && (
-            <img src={topic.imageUrl} alt="" className="mt-3 max-h-96 rounded-xl border border-border object-contain" />
+            <img src={mediaUrl(topic.imageUrl) ?? ""} alt="" className="mt-3 max-h-96 rounded-xl border border-border object-contain" />
           )}
         </div>
 
@@ -106,7 +107,7 @@ export default async function TopicDetailPage({
                   {reply.content}
                 </p>
                 {reply.imageUrl && (
-                  <img src={reply.imageUrl} alt="" className="max-h-72 rounded-lg border border-border object-contain ml-8" />
+                  <img src={mediaUrl(reply.imageUrl) ?? ""} alt="" className="max-h-72 rounded-lg border border-border object-contain ml-8" />
                 )}
               </div>
             ))}
