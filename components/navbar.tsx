@@ -5,7 +5,9 @@ import Image from "next/image";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import type { SessionPayload } from "@/lib/session";
+import { navGroupsFor, primaryNavLinks, type NavGroup } from "@/lib/nav-links";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
@@ -408,9 +410,13 @@ function MobileAvatarMenu({
 	);
 }
 
-function MobileNavMenu({ links }: { links: { href: string; label: string }[] }) {
+// The menu. Everything lives here now — the bottom nav is gone and the
+// desktop row above is only a shortcut to six of these — so it's grouped and
+// scrollable rather than a flat dropdown of twenty-odd links.
+function MainNavMenu({ groups }: { groups: NavGroup[] }) {
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
+	const pathname = usePathname();
 
 	useEffect(() => {
 		function handleClick(e: MouseEvent) {
@@ -427,6 +433,7 @@ function MobileNavMenu({ links }: { links: { href: string; label: string }[] }) 
 			<button
 				onClick={() => setOpen((v) => !v)}
 				aria-label="Open menu"
+				aria-expanded={open}
 				className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-brand hover:bg-brand-50 active:scale-90 transition-transform"
 			>
 				<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,16 +442,25 @@ function MobileNavMenu({ links }: { links: { href: string; label: string }[] }) 
 			</button>
 
 			{open && (
-				<div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-border py-1.5 z-50">
-					{links.map((link) => (
-						<Link
-							key={link.href}
-							href={link.href}
-							onClick={() => setOpen(false)}
-							className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
-						>
-							{link.label}
-						</Link>
+				<div className="absolute right-0 mt-2 w-72 max-h-[75vh] overflow-y-auto bg-white dark:bg-card rounded-xl shadow-lg border border-border py-2 z-50">
+					{groups.map((group) => (
+						<div key={group.title} className="py-1">
+							<p className="px-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+								{group.title}
+							</p>
+							{group.links.map((link) => (
+								<Link
+									key={link.href}
+									href={link.href}
+									onClick={() => setOpen(false)}
+									className={`block px-4 py-2 text-sm transition-colors hover:bg-muted ${
+										pathname === link.href ? "text-brand font-semibold bg-brand-50" : "text-foreground"
+									}`}
+								>
+									{link.label}
+								</Link>
+							))}
+						</div>
 					))}
 				</div>
 			)}
@@ -461,28 +477,9 @@ export function Navbar({
 	walletBalance?: number | null;
 	pendingCheckout?: { token: string; totalAmount: number } | null;
 }) {
-	const navLinks = [
-		{ href: "/shares", label: "Shares 6" },
-		{ href: "/shares/buy-request", label: "Share 4" },
-		{ href: "/services", label: "Services" },
-		{ href: "/taxi", label: "Taxi Rent" },
-		{ href: "/air-ticket", label: "Air Ticket" },
-		{ href: "/forum", label: "Forum" },
-		{ href: "/currency", label: "Currency" },
-		{ href: "/islamic-center", label: "Islamic Center" },
-		{ href: "/pick-put", label: "Pick & Put" },
-	];
-
-	// Wallet/Checkout/Reminders/History surface in mobile menu once logged in
-	const mobileMenuLinks = user
-		? [
-				...navLinks,
-				{ href: "/history", label: "All History" },
-				{ href: "/reminders", label: "Alarm & Reminders" },
-				{ href: "/wallet", label: "Wallet" },
-				{ href: "/checkout", label: "Checkout" },
-		  ]
-		: navLinks;
+	const signedIn = Boolean(user);
+	const groups = navGroupsFor(signedIn);
+	const navLinks = primaryNavLinks(signedIn);
 
 	return (
 		<header className="sticky top-0 z-50 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-b border-border">
@@ -520,12 +517,15 @@ export function Navbar({
 								Login
 							</Link>
 						)}
-						<MobileNavMenu links={mobileMenuLinks} />
+						<MainNavMenu groups={groups} />
 					</div>
 
 					{/* Desktop right side */}
 					<div className="hidden xl:flex items-center gap-2.5 shrink-0">
 						<ThemeToggle compact />
+						{/* The row above is six shortcuts; the full menu is here on every
+						    width, since the bottom nav that used to carry the rest is gone. */}
+						<MainNavMenu groups={groups} />
 						{user ? (
 							<AvatarDropdown user={user} />
 						) : (

@@ -537,6 +537,10 @@ export async function resetPasswordAction(
 
 const setPinSchema = z
   .object({
+    // Optional because the profile's "change PIN" path doesn't send it — only
+    // the signup screen does, where it's how a Google user corrects the name
+    // Google supplied. That name ends up on share certificates.
+    fullName: z.string().trim().min(2, "Enter your full name").max(80).optional(),
     pin: z
       .string()
       .regex(/^\d{4}$/, "PIN must be exactly 4 digits")
@@ -557,7 +561,9 @@ export async function setPinAction(
     const session = await getSession();
     if (!session) redirect("/login");
 
+    const rawName = formData.get("fullName");
     const parse = setPinSchema.safeParse({
+      fullName: typeof rawName === "string" && rawName.trim() ? rawName : undefined,
       pin: formData.get("pin"),
       confirmPin: formData.get("confirmPin"),
     });
@@ -571,16 +577,20 @@ export async function setPinAction(
       return { fieldErrors };
     }
 
-    const { pin } = parse.data;
+    const { pin, fullName } = parse.data;
     const pinHash = await bcrypt.hash(pin, 12);
 
     await prisma.user.update({
       where: { id: session.userId },
-      data: { pinHash },
+      // Only touch the name when one was submitted and it actually changed.
+      data: fullName && fullName !== session.fullName ? { pinHash, fullName } : { pinHash },
     });
+    if (fullName && fullName !== session.fullName) {
+      await rememberAccount({ email: session.email, fullName });
+    }
     await markPinVerifiedAndUpdateSession(session.userId);
 
-    redirectUrl = "/dashboard?pin_set=1";
+    redirectUrl = `${POST_LOGIN_PATH}?pin_set=1`;
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
     console.error("Set PIN error:", err);

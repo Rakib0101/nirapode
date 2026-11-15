@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { BottomNav } from "@/components/bottom-nav";
 import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 import type { SessionPayload } from "@/lib/session";
 import type { SiteContactSettings } from "@/lib/site-contact-types";
@@ -24,6 +23,9 @@ type ShellProps = {
   contactSettings?: SiteContactSettings;
 };
 
+// No bottom nav: the client asked for one menu, in the top bar. It used to
+// carry two more link lists of its own (one for guests, one for signed-in
+// users) that disagreed with the navbar — see lib/nav-links.ts.
 export function Shell({ children, user, rateBar, walletBalance, pendingCheckout, contactSettings }: ShellProps) {
   const pathname = usePathname();
 
@@ -36,9 +38,8 @@ export function Shell({ children, user, rateBar, walletBalance, pendingCheckout,
     <>
       <Navbar user={user} walletBalance={walletBalance} pendingCheckout={pendingCheckout} />
       {rateBar}
-      <main className="flex-1 pb-16 lg:pb-0">{children}</main>
+      <main className="flex-1">{children}</main>
       <Footer contact={contactSettings} />
-      <BottomNav user={user} />
       <FloatingWhatsApp
         whatsappNumber={contactSettings?.whatsappNumber}
         defaultMessage={contactSettings?.whatsappMessage}

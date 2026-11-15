@@ -8,6 +8,9 @@ import { z } from "zod";
 // claim — a mobile JWT can't be updated in place like the web's cookie.
 const setPinSchema = z
   .object({
+    // Optional: only the signup screen sends it, where it's how a Google user
+    // corrects the name Google supplied. That name goes on share certificates.
+    fullName: z.string().trim().min(2, "Enter your full name").max(80).optional(),
     pin: z
       .string()
       .regex(/^\d{4}$/, "PIN must be exactly 4 digits")
@@ -36,10 +39,24 @@ export async function POST(req: Request) {
     }
 
     const pinHash = await bcrypt.hash(parse.data.pin, 12);
-    await prisma.user.update({ where: { id: session.userId }, data: { pinHash } });
+    const { fullName } = parse.data;
+    const nameChanged = Boolean(fullName && fullName !== session.fullName);
 
-    const token = await issueMobileToken({ ...session, hasPin: true });
-    return Response.json({ success: true, token });
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: nameChanged ? { pinHash, fullName } : { pinHash },
+    });
+
+    const token = await issueMobileToken({
+      ...session,
+      hasPin: true,
+      ...(nameChanged ? { fullName: fullName as string } : {}),
+    });
+    return Response.json({
+      success: true,
+      token,
+      ...(nameChanged ? { fullName } : {}),
+    });
   } catch (err: unknown) {
     console.error("Mobile set-pin error:", err);
     return Response.json(

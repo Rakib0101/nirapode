@@ -5,10 +5,20 @@ import { setPinAction } from "@/app/actions/auth";
 import Link from "next/link";
 import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 
-export function SetPinForm({ pinMandatory }: { pinMandatory: boolean }) {
+export function SetPinForm({
+  pinMandatory,
+  // Only passed when the account has never had a PIN — i.e. this is signup,
+  // not a later PIN change. Prefilled with whatever name is on file, which
+  // for a Google account is whatever Google supplied.
+  confirmName,
+}: {
+  pinMandatory: boolean;
+  confirmName?: string | null;
+}) {
   const [state, action, pending] = useActionState(setPinAction, null);
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
+  const [fullName, setFullName] = useState(confirmName ?? "");
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
@@ -24,6 +34,30 @@ export function SetPinForm({ pinMandatory }: { pinMandatory: boolean }) {
       </p>
 
       <form action={action} className="space-y-5">
+        {/* Share certificates print this name, and for Google signups it is
+            whatever Google had on the account — often just a first name or a
+            nickname. Asking once, here, is the only moment every new user is
+            guaranteed to pass through. */}
+        {confirmName !== undefined && confirmName !== null && (
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Your full name</label>
+            <input
+              name="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="e.g. Mohammad Rakibul Islam"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand text-sm transition-colors"
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              This is the name printed on your share certificates. You can change it later in your profile.
+            </p>
+            {state?.fieldErrors?.fullName && (
+              <p className="text-xs text-red-600 mt-1">{state.fieldErrors.fullName}</p>
+            )}
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">
             4-Digit PIN

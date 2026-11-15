@@ -2,7 +2,7 @@ import { MRTMapViewer } from "@/components/mrt-map-viewer";
 
 export const metadata = {
   title: "Singapore MRT Map — Nirapode",
-  description: "Zoomable Singapore MRT & LRT system map, with a downloadable PDF for offline use.",
+  description: "Zoomable Singapore MRT & LRT system map.",
 };
 
 // Full screen, deliberately. This is a pan-and-zoom canvas, and the page used
