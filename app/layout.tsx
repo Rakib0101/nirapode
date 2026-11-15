@@ -51,6 +51,7 @@ export default async function RootLayout({
   let contactSettings = undefined;
   let walletBalance: number | null = null;
   let pendingCheckout: { token: string; totalAmount: number } | null = null;
+  let unreadNotifications = 0;
 
   try {
     const [fetchedSession, fetchedContact] = await Promise.all([
@@ -61,7 +62,7 @@ export default async function RootLayout({
     contactSettings = fetchedContact;
 
     if (session) {
-      const [wallet, checkout] = await Promise.all([
+      const [wallet, checkout, unread] = await Promise.all([
         prisma.wallet
           .findUnique({ where: { userId: session.userId }, select: { balance: true } })
           .catch(() => null),
@@ -72,8 +73,12 @@ export default async function RootLayout({
             select: { token: true, totalAmount: true },
           })
           .catch(() => null),
+        prisma.notification
+          .count({ where: { userId: session.userId, isRead: false } })
+          .catch(() => 0),
       ]);
       walletBalance = wallet ? Number(wallet.balance) : 0;
+      unreadNotifications = unread ?? 0;
       pendingCheckout = checkout ? { token: checkout.token, totalAmount: Number(checkout.totalAmount) } : null;
     }
   } catch (err) {
@@ -97,6 +102,7 @@ export default async function RootLayout({
           rateBar={<CurrencyRateBar />}
           walletBalance={walletBalance}
           pendingCheckout={pendingCheckout}
+          unreadNotifications={unreadNotifications}
           contactSettings={contactSettings}
         >
           {children}

@@ -444,7 +444,12 @@ export async function pinLoginAction(_prev: ActionState, formData: FormData): Pr
     return { error: err instanceof Error ? err.message : "Failed to sign in. Please try again." };
   }
 
-  redirect(POST_LOGIN_PATH);
+  // Deliberately NOT redirect(). A Server Action redirect is a soft client-side
+  // transition: the browser sits on the PIN screen holding the whole RSC
+  // payload for the home page before it paints anything, which on a phone
+  // looks like the app has hung. The caller does a real navigation instead, so
+  // the streamed HTML appears as it arrives.
+  return { success: true };
 }
 
 // "Use another account" / "Not you?" — the only thing that makes the browser

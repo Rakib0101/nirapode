@@ -21,6 +21,7 @@ type ShellProps = {
   rateBar?: React.ReactNode;
   walletBalance?: number | null;
   pendingCheckout?: { token: string; totalAmount: number } | null;
+  unreadNotifications?: number;
   contactSettings?: SiteContactSettings;
 };
 
@@ -28,7 +29,7 @@ type ShellProps = {
 // bar on phones, where the top of the screen is the furthest thing from
 // your thumb. Both render lib/nav-links.ts — the bottom bar no longer keeps
 // link lists of its own, which is how the menus drifted apart before.
-export function Shell({ children, user, rateBar, walletBalance, pendingCheckout, contactSettings }: ShellProps) {
+export function Shell({ children, user, rateBar, walletBalance, pendingCheckout, contactSettings, unreadNotifications = 0 }: ShellProps) {
   const pathname = usePathname();
 
   const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
@@ -38,7 +39,12 @@ export function Shell({ children, user, rateBar, walletBalance, pendingCheckout,
 
   return (
     <>
-      <Navbar user={user} walletBalance={walletBalance} pendingCheckout={pendingCheckout} />
+      <Navbar
+        user={user}
+        walletBalance={walletBalance}
+        pendingCheckout={pendingCheckout}
+        unreadNotifications={unreadNotifications}
+      />
       {rateBar}
       <main className="flex-1 pb-16 xl:pb-0">{children}</main>
       <Footer contact={contactSettings} />

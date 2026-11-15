@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { pinLoginAction, useAnotherAccountAction } from "@/app/actions/auth";
+import { POST_LOGIN_PATH } from "@/lib/auth-redirects";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 
@@ -21,8 +22,16 @@ export function PinLoginForm({ account }: { account: { email: string; fullName: 
   const [state, action, pending] = useActionState(pinLoginAction, null);
   const [pin, setPin] = useState("");
 
+  // A real browser navigation rather than a router push. The action used to
+  // redirect(), which made Next fetch the whole home page as an RSC payload
+  // before painting anything — on a phone that reads as a hang on a blank
+  // screen. This way the browser streams the new page in as it arrives.
+  useEffect(() => {
+    if (state?.success) window.location.assign(POST_LOGIN_PATH);
+  }, [state]);
+
   function press(key: string) {
-    if (pending) return;
+    if (pending || state?.success) return;
     if (key === "del") {
       setPin((p) => p.slice(0, -1));
       return;
@@ -68,7 +77,7 @@ export function PinLoginForm({ account }: { account: { email: string; fullName: 
 
       <div>
         <p className="text-xs text-muted-foreground text-center mb-4">
-          {pending ? "Checking your PIN…" : "Enter your 4-digit PIN"}
+          {state?.success ? "Signing you in…" : pending ? "Checking your PIN…" : "Enter your 4-digit PIN"}
         </p>
 
         {/* Masked dots */}
@@ -93,7 +102,7 @@ export function PinLoginForm({ account }: { account: { email: string; fullName: 
                 key={k}
                 type="button"
                 onClick={() => press(k)}
-                disabled={pending}
+                disabled={pending || Boolean(state?.success)}
                 aria-label={k === "del" ? "Delete" : k}
                 className="h-14 rounded-2xl bg-brand-50 text-brand text-2xl font-bold flex items-center justify-center hover:bg-brand-100 active:bg-brand-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

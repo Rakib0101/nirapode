@@ -9,6 +9,18 @@ import { useCallback, useEffect, useState } from "react";
 
 type State = "checking" | "unsupported" | "blocked" | "off" | "on" | "working";
 
+// navigator.serviceWorker.ready never resolves when no worker ends up
+// controlling the page — a failed registration leaves it pending forever, and
+// this control would sit invisible in its "checking" state with no clue why.
+const SW_READY_TIMEOUT_MS = 6000;
+
+async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS)),
+  ]);
+}
+
 // The VAPID public key travels as base64url; the Push API wants raw bytes.
 // Returns the ArrayBuffer rather than a Uint8Array view: Uint8Array is generic
 // over its backing buffer in current TypeScript, and the inferred
@@ -39,7 +51,8 @@ export function WebPushToggle() {
     }
     if (Notification.permission === "denied") return "blocked";
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await readyRegistration();
+      if (!reg) return "unsupported";
       return (await reg.pushManager.getSubscription()) ? "on" : "off";
     } catch {
       return "unsupported";
@@ -71,7 +84,8 @@ export function WebPushToggle() {
         return;
       }
 
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await readyRegistration();
+      if (!reg) throw new Error("Notifications aren't ready in this browser yet. Reload and try again.");
       const sub =
         (await reg.pushManager.getSubscription()) ??
         (await reg.pushManager.subscribe({
@@ -99,8 +113,8 @@ export function WebPushToggle() {
     setError(null);
     setState("working");
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
+      const reg = await readyRegistration();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
       if (sub) {
         await fetch("/api/push/web", {
           method: "DELETE",
@@ -116,7 +130,9 @@ export function WebPushToggle() {
     }
   }
 
-  if (state === "checking") return null;
+  if (state === "checking") {
+    return <p className="text-xs text-muted-foreground">Checking notification support…</p>;
+  }
 
   if (state === "unsupported") {
     return (

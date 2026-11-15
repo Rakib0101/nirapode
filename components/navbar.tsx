@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import type { SessionPayload } from "@/lib/session";
 import { navGroupsFor, primaryNavLinks, type NavGroup } from "@/lib/nav-links";
+import { NotificationBell } from "@/components/notification-bell";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
@@ -472,10 +473,12 @@ export function Navbar({
 	user,
 	walletBalance,
 	pendingCheckout,
+	unreadNotifications = 0,
 }: {
 	user: SessionPayload | null;
 	walletBalance?: number | null;
 	pendingCheckout?: { token: string; totalAmount: number } | null;
+	unreadNotifications?: number;
 }) {
 	const signedIn = Boolean(user);
 	const groups = navGroupsFor(signedIn);
@@ -505,6 +508,7 @@ export function Navbar({
 
 					{/* Mobile/Tablet right: tappable avatar with dropdown + theme + hamburger menu */}
 					<div className="flex xl:hidden items-center gap-1.5">
+						{user && <NotificationBell initialUnread={unreadNotifications} />}
 						<ThemeToggle compact />
 						{user && (
 							<MobileAvatarMenu user={user} walletBalance={walletBalance} pendingCheckout={pendingCheckout} />
@@ -523,6 +527,7 @@ export function Navbar({
 
 					{/* Desktop right side */}
 					<div className="hidden xl:flex items-center gap-2.5 shrink-0">
+						{user && <NotificationBell initialUnread={unreadNotifications} />}
 						<ThemeToggle compact />
 						{/* The row above is six shortcuts; the full menu is here on every
 						    width, since the bottom nav that used to carry the rest is gone. */}

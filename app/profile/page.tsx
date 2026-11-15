@@ -7,6 +7,7 @@ import { ReferralCard } from "./referral-card";
 import { EditProfileForm } from "./edit-profile-form";
 import { PinLockToggle } from "./pin-lock-toggle";
 import { isPinMandatoryRole } from "@/lib/pin-login";
+import { WebPushToggle } from "@/components/web-push-toggle";
 
 export default async function ProfilePage() {
 	const session = await getSession();
@@ -224,6 +225,16 @@ export default async function ProfilePage() {
 
 				{/* Security: 4-digit App Lock PIN Mode ON / OFF */}
 				<PinLockToggle hasPin={Boolean(user.pinHash)} pinMandatory={isPinMandatoryRole(user.role)} />
+
+				{/* Browser notifications are per-browser, so this belongs with the
+				    other per-device settings rather than buried on /reminders. */}
+				<div className="bg-white rounded-xl border border-border p-5">
+					<h2 className="font-semibold text-foreground text-sm mb-1">Browser Notifications</h2>
+					<p className="text-xs text-muted-foreground mb-3">
+						Get reminders as a popup on this device, even with Nirapode closed.
+					</p>
+					<WebPushToggle />
+				</div>
 			</div>
 		</div>
 	);

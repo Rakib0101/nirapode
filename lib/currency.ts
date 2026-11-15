@@ -45,6 +45,11 @@ export async function getLiveBdtRate(): Promise<number | null> {
   try {
     const res = await fetch("https://api.exchangerate-api.com/v4/latest/SGD", {
       next: { revalidate: 3600 },
+      // This runs in the root layout's rate bar, so it is on the critical path
+      // of every page. Without a deadline a slow or unreachable third party
+      // holds the whole render open — the catch below only fires on failure,
+      // never on a hang. Three seconds, then fall back to the stored rate.
+      signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;
     const data = await res.json();

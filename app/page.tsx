@@ -194,13 +194,17 @@ const ICONS = {
 };
 
 export default async function HomePage() {
-	let featuredProjects: Awaited<ReturnType<typeof getFeaturedProjects>> = [];
-
-	try {
-		featuredProjects = (await getFeaturedProjects()) ?? [];
-	} catch (err) {
-		console.error("HomePage data loading error:", err);
-	}
+	// Both at once. These used to run in series, with getSession() waiting on a
+	// project query it has nothing to do with — and on a signed-in load this
+	// page is already behind the layout's own round trips.
+	const [featuredProjectsResult, session] = await Promise.all([
+		getFeaturedProjects().catch((err) => {
+			console.error("HomePage data loading error:", err);
+			return [];
+		}),
+		getSession(),
+	]);
+	const featuredProjects = featuredProjectsResult ?? [];
 
 	const mktPoints = [
 		"Admin-created and verified investment projects",
@@ -210,7 +214,6 @@ export default async function HomePage() {
 		"Full purchase and transaction history",
 	] as const;
 
-	const session = await getSession();
 
 	return (
 		<>

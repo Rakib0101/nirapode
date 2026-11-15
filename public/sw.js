@@ -12,9 +12,16 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request));
-});
+// Deliberately empty. A registered fetch handler is what makes the app
+// installable, but calling respondWith(fetch(event.request)) — which this
+// used to do — routes every request for HTML, JS, images and APIs through the
+// worker thread and back out again, for no benefit at all. On a phone that is
+// a measurable tax on every navigation, and it interferes with streamed
+// responses: the shell arrives and the body crawls in behind it.
+//
+// Returning without calling respondWith() hands the request straight back to
+// the browser, which handles it natively.
+self.addEventListener("fetch", () => {});
 
 // ── Push ─────────────────────────────────────────────────────────────────────
 // A browser can only show a notification from inside the service worker, even

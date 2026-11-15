@@ -55,6 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/wallet", label: "Wallet", auth: "signedIn" },
       { href: "/checkout", label: "Checkout", auth: "signedIn" },
       { href: "/history", label: "All History", auth: "signedIn" },
+      { href: "/notifications", label: "Notifications", auth: "signedIn" },
       { href: "/currency", label: "Currency" },
     ],
   },
@@ -78,6 +79,7 @@ export const NAV_GROUPS: NavGroup[] = [
 export const ACCOUNT_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", auth: "signedIn" },
   { href: "/profile", label: "Profile", auth: "signedIn" },
+  { href: "/notifications", label: "Notifications", auth: "signedIn" },
 ];
 
 function visible(link: NavLink, signedIn: boolean): boolean {
