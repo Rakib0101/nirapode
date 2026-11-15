@@ -65,7 +65,17 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto bg-white dark:bg-card rounded-xl shadow-lg border border-border z-50">
+        <div
+          className={
+            // On a phone this can't be a panel hanging off the bell: 20rem of
+            // dropdown anchored to an icon near the right edge runs straight
+            // off the left of the screen. Pinned to both edges instead, so its
+            // width is whatever the viewport allows. From `sm` up there's room
+            // for the normal anchored dropdown.
+            "fixed left-2 right-2 top-16 max-h-[70vh] overflow-y-auto bg-white dark:bg-card rounded-xl shadow-lg border border-border z-50 " +
+            "sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80"
+          }
+        >
           <div className="sticky top-0 bg-white dark:bg-card px-4 py-2.5 border-b border-border flex items-center justify-between">
             <span className="text-sm font-bold text-foreground">Notifications</span>
             <Link

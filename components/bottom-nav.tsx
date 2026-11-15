@@ -160,12 +160,14 @@ export function BottomNav({ signedIn }: { signedIn: boolean }) {
                 key={tab.href}
                 href={tab.href}
                 onClick={() => setSheetOpen(false)}
-                className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors ${
+                className={`flex flex-col items-center gap-0.5 py-2 min-w-0 text-[10px] font-semibold transition-colors ${
                   active ? "text-brand" : "text-muted-foreground"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                {tab.label}
+                <Icon className="w-5 h-5 shrink-0" />
+                {/* Five labels across a 320px screen: "Community" is the one
+                    that would otherwise wrap and shove the row taller. */}
+                <span className="max-w-full truncate px-0.5">{tab.label}</span>
               </Link>
             );
           })}
@@ -174,12 +176,12 @@ export function BottomNav({ signedIn }: { signedIn: boolean }) {
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
             aria-expanded={sheetOpen}
-            className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors ${
+            className={`flex flex-col items-center gap-0.5 py-2 min-w-0 text-[10px] font-semibold transition-colors ${
               sheetOpen || moreActive ? "text-brand" : "text-muted-foreground"
             }`}
           >
-            <IconMore className="w-5 h-5" />
-            More
+            <IconMore className="w-5 h-5 shrink-0" />
+            <span className="max-w-full truncate px-0.5">More</span>
           </button>
         </div>
       </nav>

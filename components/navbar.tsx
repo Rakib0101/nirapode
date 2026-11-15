@@ -335,7 +335,7 @@ function MobileAvatarMenu({
 			</button>
 
 			{open && (
-				<div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-border py-1 z-50">
+				<div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-1rem)] bg-white rounded-xl shadow-lg border border-border py-1 z-50">
 					{/* User name */}
 					<div className="px-4 py-3 border-b border-border">
 						<p className="text-sm font-semibold text-foreground truncate">{user.fullName}</p>

@@ -12,7 +12,7 @@ export const metadata = {
 // the viewer carries its own Back button.
 export default function MrtMapPage() {
   return (
-    <div className="fixed inset-0 h-[100dvh] w-screen">
+    <div className="fixed inset-0 h-[100dvh]">
       <MRTMapViewer />
     </div>
   );
