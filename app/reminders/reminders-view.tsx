@@ -6,6 +6,7 @@ import { unlockSlotAction, saveReminderAction, triggerTestReminderAction } from 
 import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE, utcToZonedInputs } from "@/lib/timezones";
 import { SelectField } from "@/components/select-field";
 import { REMINDER_CHANNELS, REMINDER_CHANNEL_LABELS, toReminderChannel } from "@/lib/reminder-channels";
+import { WebPushToggle } from "@/components/web-push-toggle";
 
 const noopSubscribe = () => () => {};
 
@@ -114,6 +115,12 @@ export function RemindersView({
             + Deposit
           </Link>
         </div>
+      </div>
+
+      {/* Browser notifications are per-browser, so this is a visible control
+          rather than something that silently happens at login. */}
+      <div className="bg-white rounded-2xl border border-border p-4 shadow-2xs">
+        <WebPushToggle />
       </div>
 
       {/* Grid of 10 slots */}

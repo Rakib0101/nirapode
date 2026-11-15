@@ -211,6 +211,7 @@ model User {
   referredBuyRequests        ShareBuyRequest[]      @relation("BuyRequestReferrer")
   reminders                  Reminder[]
   pushTokens                 PushToken[]
+  webPushSubscriptions       WebPushSubscription[]
   productOrders              ProductOrder[]
   forumTopics                ForumTopic[]
   forumReplies               ForumReply[]
@@ -950,6 +951,26 @@ model PushToken {
   userId     String
   token      String   @unique
   platform   String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A browser that agreed to receive notifications. The counterpart to
+// PushToken, which covers phones — same idea, different transport: browsers
+// speak Web Push (VAPID), and the endpoint is the push service's own URL,
+// unique per browser profile. p256dh and auth are the keys that payload is
+// encrypted with, handed over by the browser at subscribe time.
+model WebPushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
   createdAt  DateTime @default(now())
   lastUsedAt DateTime @default(now())
 

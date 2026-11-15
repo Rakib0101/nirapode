@@ -85,7 +85,12 @@ export async function deliverReminder(reminder: ReminderWithUser): Promise<{ pus
     const { sent } = await sendPushToUser(reminder.userId, {
       title: `🔔 Reminder — Slot #${reminder.slotIndex}`,
       body: note || "Your scheduled Nirapode reminder.",
+      // data.url is the app's route; url is the website's. Same reminder,
+      // two places it can be opened from.
       data: { kind: "reminder", slotIndex: reminder.slotIndex, url: "/more/reminders" },
+      url: "/reminders",
+      // One slot replaces its own earlier notification rather than stacking.
+      tag: `reminder-${reminder.slotIndex}`,
     });
     pushSent = sent;
   }
