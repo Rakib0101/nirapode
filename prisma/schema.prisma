@@ -210,6 +210,7 @@ model User {
   processedBuyRequests       ShareBuyRequest[]      @relation("BuyRequestProcessor")
   referredBuyRequests        ShareBuyRequest[]      @relation("BuyRequestReferrer")
   reminders                  Reminder[]
+  pushTokens                 PushToken[]
   productOrders              ProductOrder[]
   forumTopics                ForumTopic[]
   forumReplies               ForumReply[]
@@ -941,6 +942,22 @@ model ApplyApplication {
 // ALARM / REMINDER SYSTEM (10 slots, slot 1 free)
 // ─────────────────────────────────────────────
 
+// One row per device, so a user signed in on a phone and a tablet gets the
+// alarm on both. Expo hands the app an opaque token; we send to it through
+// Expo's push service rather than talking to APNs/FCM ourselves.
+model PushToken {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  platform   String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model Reminder {
   id         String    @id @default(cuid())
   userId     String
@@ -953,7 +970,11 @@ model Reminder {
   // — remindAt is converted to/from this zone instead of the browser's local
   // offset. Null on legacy rows = assume Asia/Singapore, the old hardcoded behavior.
   timezone   String?
-  channel    String    @default("WHATSAPP") // "WHATSAPP", "GMAIL", "BOTH"
+  // "EMAIL", "APP" (push + in-app bell) or "BOTH". WhatsApp was a third
+  // option; it was removed because delivery depended on a Twilio sandbox the
+  // recipient had to join by hand. An in-app notification is written either
+  // way — the channel only decides what else goes out.
+  channel    String    @default("BOTH")
   isActive   Boolean   @default(true)
   lastSentAt DateTime?
   createdAt  DateTime  @default(now())

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getMobileSession, unauthorizedJson } from "@/lib/mobile-session";
+import { toReminderChannel } from "@/lib/reminder-channels";
 
 // Mirrors app/actions/reminders.ts getReminderSlotPrice.
 async function getReminderSlotPrice(): Promise<number> {
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
         note: existing?.note ?? null,
         remindAt: existing?.remindAt ? existing.remindAt.toISOString() : null,
         timezone: existing?.timezone ?? null,
-        channel: existing?.channel ?? "WHATSAPP",
+        channel: toReminderChannel(existing?.channel),
         isActive: existing?.isActive ?? false,
         lastSentAt: existing?.lastSentAt ? existing.lastSentAt.toISOString() : null,
       };

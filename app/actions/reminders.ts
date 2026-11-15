@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deliverReminder, sendDueReminders } from "@/lib/reminders";
 import { zonedToUtc, DEFAULT_REMINDER_TIMEZONE, REMINDER_COUNTRIES } from "@/lib/timezones";
+import { DEFAULT_REMINDER_CHANNEL, toReminderChannel } from "@/lib/reminder-channels";
 
 export async function getReminderSlotPrice(): Promise<number> {
   try {
@@ -117,7 +118,8 @@ export async function saveReminderAction(formData: FormData) {
   const note = (formData.get("note") as string)?.trim();
   const dateStr = formData.get("remindAt") as string;
   const timeStr = (formData.get("remindTime") as string) || "09:00";
-  const channel = (formData.get("channel") as string) || "WHATSAPP";
+  // Previously taken raw, so any string landed in the column.
+  const channel = toReminderChannel(formData.get("channel"));
   const timezoneRaw = formData.get("timezone") as string | null;
   const timezone = REMINDER_COUNTRIES.some((c) => c.timezone === timezoneRaw) ? timezoneRaw! : DEFAULT_REMINDER_TIMEZONE;
 
@@ -197,7 +199,7 @@ export async function triggerTestReminderAction(slotIndex: number) {
 
 
   // Manual test send — doesn't disarm the scheduled reminder.
-  const { waSent } = await deliverReminder(reminder);
+  const { pushSent } = await deliverReminder(reminder);
 
   await prisma.reminder.update({
     where: { id: reminder.id },
@@ -206,7 +208,13 @@ export async function triggerTestReminderAction(slotIndex: number) {
 
   revalidatePath("/reminders");
   revalidatePath("/alarm");
-  return { success: true, message: `Test reminder alert sent for Slot #${slotIndex}!`, waApiSuccess: waSent };
+  return {
+    success: true,
+    message:
+      pushSent > 0
+        ? `Test reminder sent for Slot #${slotIndex} — including a popup on ${pushSent} signed-in device${pushSent === 1 ? "" : "s"}.`
+        : `Test reminder sent for Slot #${slotIndex}!`,
+  };
 }
 
 // Admin: send all due reminders immediately (same as the scheduled job).

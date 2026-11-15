@@ -5,6 +5,7 @@ import Link from "next/link";
 import { unlockSlotAction, saveReminderAction, triggerTestReminderAction } from "@/app/actions/reminders";
 import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE, utcToZonedInputs } from "@/lib/timezones";
 import { SelectField } from "@/components/select-field";
+import { REMINDER_CHANNELS, REMINDER_CHANNEL_LABELS, toReminderChannel } from "@/lib/reminder-channels";
 
 const noopSubscribe = () => () => {};
 
@@ -24,12 +25,10 @@ export function RemindersView({
   slots,
   walletBalance,
   slotPrice,
-  userPhone,
 }: {
   slots: ReminderSlot[];
   walletBalance: number;
   slotPrice: number;
-  userPhone: string | null;
 }) {
   const [loadingSlot, setLoadingSlot] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ slotIndex: number; text: string; error?: boolean } | null>(null);
@@ -70,29 +69,20 @@ export function RemindersView({
     }
   }
 
-  async function handleTest(slotIndex: number, note: string) {
+  async function handleTest(slotIndex: number) {
     setLoadingSlot(slotIndex);
     setMsg(null);
 
     const res = await triggerTestReminderAction(slotIndex);
     setLoadingSlot(null);
 
+    // No WhatsApp fallback any more. It used to pop open a wa.me chat with the
+    // reminder pre-typed and call that "sent" — which it wasn't, until the
+    // user pressed send themselves.
     if ("error" in res && res.error) {
       setMsg({ slotIndex, text: res.error, error: true });
     } else {
-      if ("waApiSuccess" in res && res.waApiSuccess) {
-        setMsg({ slotIndex, text: "✅ Automated Alert sent directly to your WhatsApp & Email!", error: false });
-      } else {
-        // Fallback: If automated WhatsApp Gateway is not yet configured by admin, open the user's direct chat
-        const rawNote = `🔔 Nirapode Reminder (Slot #${slotIndex}):\n\n${note}`;
-        if (userPhone) {
-          const digits = userPhone.replace(/[^\d]/g, "");
-          window.open(`https://wa.me/${digits}?text=${encodeURIComponent(rawNote)}`, "_blank");
-        } else {
-          window.open(`https://wa.me/?text=${encodeURIComponent(rawNote)}`, "_blank");
-        }
-        setMsg({ slotIndex, text: "Email sent & WhatsApp chat opened!", error: false });
-      }
+      setMsg({ slotIndex, text: res.message ?? "Test reminder sent!", error: false });
     }
   }
 
@@ -248,10 +238,12 @@ export function RemindersView({
                           <label className="block text-xs font-medium text-foreground mb-1">
                             Notification Via
                           </label>
-                          <SelectField name="channel" defaultValue={s.channel ?? "WHATSAPP"}>
-                            <option value="WHATSAPP">WhatsApp</option>
-                            <option value="GMAIL">Gmail / Email</option>
-                            <option value="BOTH">WhatsApp & Gmail</option>
+                          <SelectField name="channel" defaultValue={toReminderChannel(s.channel)}>
+                            {REMINDER_CHANNELS.map((c) => (
+                              <option key={c} value={c}>
+                                {REMINDER_CHANNEL_LABELS[c]}
+                              </option>
+                            ))}
                           </SelectField>
                         </div>
                       </div>
@@ -275,10 +267,10 @@ export function RemindersView({
                       {s.note && (
                         <button
                           type="button"
-                          onClick={() => handleTest(s.slotIndex, s.note!)}
+                          onClick={() => handleTest(s.slotIndex)}
                           disabled={loadingSlot === s.slotIndex}
                           className="px-3 py-2 text-xs font-semibold text-brand bg-brand-50 hover:bg-brand-100 rounded-xl transition-colors cursor-pointer"
-                          title="Test send to WhatsApp / Email"
+                          title="Send this reminder now"
                         >
                           🔔 Send Alert Now
                         </button>

@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { getRemindersDataAction } from "@/app/actions/reminders";
 import { RemindersView } from "./reminders-view";
 import Link from "next/link";
+import { toReminderChannel } from "@/lib/reminder-channels";
 
 export default async function RemindersPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const { reminders, walletBalance, slotPrice, user } = await getRemindersDataAction();
+  const { reminders, walletBalance, slotPrice } = await getRemindersDataAction();
 
   // Create an array of 10 slots
   const slots = Array.from({ length: 10 }, (_, i) => {
@@ -21,7 +22,7 @@ export default async function RemindersPage() {
       note: existing?.note,
       remindAt: existing?.remindAt,
       timezone: existing?.timezone,
-      channel: existing?.channel ?? "WHATSAPP",
+      channel: toReminderChannel(existing?.channel),
       isActive: existing?.isActive ?? false,
       lastSentAt: existing?.lastSentAt,
     };
@@ -43,7 +44,7 @@ export default async function RemindersPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Alarm & Automated Reminders</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Write notes and pick target dates for passport renewal, work permits, house rent, or remittance. Alerts will be delivered to your WhatsApp or Gmail.
+            Write notes and pick target dates for passport renewal, work permits, house rent, or remittance. Alerts arrive by email and as a notification on your phone.
           </p>
         </div>
 
@@ -52,7 +53,6 @@ export default async function RemindersPage() {
           slots={slots}
           walletBalance={walletBalance}
           slotPrice={slotPrice}
-          userPhone={user?.phone ?? null}
         />
       </div>
     </div>

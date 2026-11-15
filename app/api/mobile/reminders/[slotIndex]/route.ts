@@ -2,13 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { getMobileSession, unauthorizedJson } from "@/lib/mobile-session";
 import { zonedToUtc, DEFAULT_REMINDER_TIMEZONE, REMINDER_COUNTRIES } from "@/lib/timezones";
 import { z } from "zod";
+import { DEFAULT_REMINDER_CHANNEL, REMINDER_CHANNELS } from "@/lib/reminder-channels";
 
 // Mirrors app/actions/reminders.ts saveReminderAction.
 const schema = z.object({
   note: z.string().trim().optional(),
   remindDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   remindTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  channel: z.enum(["WHATSAPP", "GMAIL", "BOTH"]).optional(),
+  channel: z.enum(REMINDER_CHANNELS).optional(),
   timezone: z.string().optional(),
 });
 
@@ -26,7 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slotInd
     const parse = schema.safeParse(body);
     if (!parse.success) return Response.json({ error: parse.error.issues[0].message }, { status: 400 });
 
-    const { remindDate, remindTime = "09:00", channel = "WHATSAPP" } = parse.data;
+    const { remindDate, remindTime = "09:00", channel = DEFAULT_REMINDER_CHANNEL } = parse.data;
     const note = parse.data.note?.trim();
     const timezone = REMINDER_COUNTRIES.some((c) => c.timezone === parse.data.timezone) ? parse.data.timezone! : DEFAULT_REMINDER_TIMEZONE;
 

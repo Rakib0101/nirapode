@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
-import { sendWhatsAppMessage } from "@/lib/whatsapp-server";
+import { sendPushToUser } from "@/lib/push";
+import { sendsEmail, sendsPush, toReminderChannel } from "@/lib/reminder-channels";
 import { REMINDER_COUNTRIES, DEFAULT_REMINDER_TIMEZONE } from "@/lib/timezones";
 import { renderBrandEmail } from "@/lib/email-template";
 
@@ -12,7 +13,7 @@ type ReminderWithUser = {
   remindAt: Date | null;
   timezone?: string | null;
   channel: string;
-  user: { email: string; phone: string | null; fullName: string };
+  user: { email: string; fullName: string };
 };
 
 function formatWhen(d: Date, timezone?: string | null): string {
@@ -26,12 +27,16 @@ function formatWhen(d: Date, timezone?: string | null): string {
 }
 
 // Delivers one reminder over its chosen channel(s) plus an in-app
-// notification. Never throws — a failed email/WhatsApp must not block the rest.
-export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waSent: boolean }> {
+// notification. Never throws — a failed email or push must not block the rest.
+export async function deliverReminder(reminder: ReminderWithUser): Promise<{ pushSent: number }> {
   const note = reminder.note ?? "";
+  // Normalised here as well as on save: an unrecognised value would otherwise
+  // match neither branch and the reminder would fire into nothing. Falling
+  // back to BOTH means the worst case is an extra email, not silence.
+  const channel = toReminderChannel(reminder.channel);
   const when = reminder.remindAt ? formatWhen(reminder.remindAt, reminder.timezone) : null;
 
-  if ((reminder.channel === "GMAIL" || reminder.channel === "BOTH") && reminder.user.email) {
+  if (sendsEmail(channel) && reminder.user.email) {
     try {
       const bodyHtml = `
         <p style="margin: 0 0 16px; font-size: 15px; color: #334155; line-height: 1.6;">
@@ -73,12 +78,16 @@ export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waS
     }
   }
 
-  let waSent = false;
-  if ((reminder.channel === "WHATSAPP" || reminder.channel === "BOTH") && reminder.user.phone) {
-    const text = `🔔 Nirapode Reminder (Slot #${reminder.slotIndex})\n\n${note}${when ? `\nScheduled for: ${when}` : ""}`;
-    const res = await sendWhatsAppMessage({ to: reminder.user.phone, text });
-    waSent = res.success;
-    if (!res.success) console.error(`[reminders] WhatsApp failed for ${reminder.id}: ${res.error}`);
+  // Pops up on the phone straight away. The in-app notification below is the
+  // durable record; this is the part that actually gets someone's attention.
+  let pushSent = 0;
+  if (sendsPush(channel)) {
+    const { sent } = await sendPushToUser(reminder.userId, {
+      title: `🔔 Reminder — Slot #${reminder.slotIndex}`,
+      body: note || "Your scheduled Nirapode reminder.",
+      data: { kind: "reminder", slotIndex: reminder.slotIndex, url: "/more/reminders" },
+    });
+    pushSent = sent;
   }
 
   await prisma.notification.create({
@@ -90,7 +99,7 @@ export async function deliverReminder(reminder: ReminderWithUser): Promise<{ waS
     },
   });
 
-  return { waSent };
+  return { pushSent };
 }
 
 // Sends every reminder whose time has come. Each is claimed atomically

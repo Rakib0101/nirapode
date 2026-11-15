@@ -16,10 +16,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slotInd
     });
     if (!reminder || !reminder.note) return Response.json({ error: "No note found in this reminder slot." }, { status: 400 });
 
-    const { waSent } = await deliverReminder(reminder);
+    const { pushSent } = await deliverReminder(reminder);
     await prisma.reminder.update({ where: { id: reminder.id }, data: { lastSentAt: new Date() } });
 
-    return Response.json({ success: true, message: `Test reminder alert sent for Slot #${slotIndex}!`, waApiSuccess: waSent });
+    return Response.json({
+      success: true,
+      message: `Test reminder alert sent for Slot #${slotIndex}!`,
+      pushSent,
+    });
   } catch (err: unknown) {
     console.error("Mobile reminder-test error:", err);
     return Response.json({ error: err instanceof Error ? err.message : "Failed to send test reminder." }, { status: 500 });
