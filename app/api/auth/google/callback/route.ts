@@ -18,6 +18,37 @@ function isSafeMobileRedirect(uri: string | null): uri is string {
   return /^nirapodemobileapp:\/\//.test(uri) || /^exp:\/\//.test(uri);
 }
 
+// Google delivers this callback TWICE on the mobile flow — confirmed in
+// production logs, consistently 0.6-0.9s apart. An authorization code is
+// single-use, so the first delivery redeems it and the second comes back
+// `invalid_grant`, which turned into a generic "google_failed" that landed in
+// the app *after* the good result and overwrote it.
+//
+// Remembering the outcome per code makes the second delivery replay the first
+// answer instead of destroying it. Scoped to the mobile flow on purpose: the
+// website's success path also sets session cookies, and replaying a bare URL
+// would hand back a redirect with no session attached.
+const recentMobileResults = new Map<string, { url: string; at: number }>();
+const EXCHANGE_MEMORY_MS = 2 * 60 * 1000;
+
+function rememberMobileResult(code: string, url: string): void {
+  const now = Date.now();
+  for (const [key, value] of recentMobileResults) {
+    if (now - value.at > EXCHANGE_MEMORY_MS) recentMobileResults.delete(key);
+  }
+  recentMobileResults.set(code, { url, at: now });
+}
+
+function recallMobileResult(code: string): string | null {
+  const hit = recentMobileResults.get(code);
+  if (!hit) return null;
+  if (Date.now() - hit.at > EXCHANGE_MEMORY_MS) {
+    recentMobileResults.delete(code);
+    return null;
+  }
+  return hit.url;
+}
+
 export async function GET(req: NextRequest) {
   let base = process.env.NEXT_PUBLIC_BASE_URL?.trim();
   if (base) {
@@ -32,16 +63,26 @@ export async function GET(req: NextRequest) {
   // Google echoes back whatever we sent as `state` untouched — that's how the
   // mobile app's deep-link redirect round-trips through a flow it has no
   // other way to carry state through (no cookies).
+  const code = req.nextUrl.searchParams.get("code");
   const rawMobileRedirect = req.nextUrl.searchParams.get("state");
   const mobileRedirect = isSafeMobileRedirect(rawMobileRedirect) ? rawMobileRedirect : null;
 
   function fail(error: string): NextResponse {
-    if (mobileRedirect) return NextResponse.redirect(`${mobileRedirect}?error=${encodeURIComponent(error)}`);
+    if (mobileRedirect) {
+      const url = `${mobileRedirect}?error=${encodeURIComponent(error)}`;
+      if (code) rememberMobileResult(code, url);
+      return NextResponse.redirect(url);
+    }
     return NextResponse.redirect(new URL(`/login?error=${error}`, req.url));
   }
 
-  const code = req.nextUrl.searchParams.get("code");
   if (!code) return fail("google_cancelled");
+
+  // Second delivery of a code we already handled: replay, don't re-exchange.
+  if (mobileRedirect) {
+    const replayed = recallMobileResult(code);
+    if (replayed) return NextResponse.redirect(replayed);
+  }
 
   // Exchange code for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -57,7 +98,20 @@ export async function GET(req: NextRequest) {
   });
 
   const tokens = await tokenRes.json();
-  if (!tokens.access_token) return fail("google_failed");
+  if (!tokens.access_token) {
+    // Previously discarded, which left "google_failed" with no way to tell a
+    // replayed code from a misconfigured client.
+    console.error(
+      "[google] token exchange failed:",
+      JSON.stringify({
+        error: tokens.error,
+        description: tokens.error_description,
+        redirectUri: `${base}/api/auth/google/callback`,
+        isMobile: Boolean(mobileRedirect),
+      })
+    );
+    return fail("google_failed");
+  }
 
   // Get Google user info
   const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -122,6 +176,8 @@ export async function GET(req: NextRequest) {
     const token = await issueMobileToken({ userId: user.id, role: user.role, email: user.email, fullName: user.fullName });
     const mobileUser = { id: user.id, email: user.email, fullName: user.fullName, role: user.role, hasPin: Boolean(user.pinHash) };
     const url = `${mobileRedirect}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(JSON.stringify(mobileUser))}`;
+    // The whole point: the duplicate delivery replays this instead of failing.
+    rememberMobileResult(code, url);
     return NextResponse.redirect(url);
   }
 
