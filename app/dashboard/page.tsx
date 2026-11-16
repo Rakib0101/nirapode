@@ -118,7 +118,7 @@ export default async function DashboardPage() {
 
   const MODULE_LINKS = [
     { href: "/history", label: "All History", desc: "Shares, Taxi, Flights & Wallet history", icon: "📑" },
-    { href: "/reminders", label: "Alarm & Reminders", desc: "10 slots with WhatsApp / Gmail alerts", icon: "⏰" },
+    { href: "/reminders", label: "Alarm & Reminders", desc: "10 slots with email & app alerts", icon: "⏰" },
     { href: "/forum", label: "Community Forum", desc: "Group discussions & questions", icon: "💬" },
     { href: "/shares/my", label: "My Investments", desc: "Shares 6 portfolio & certificates", icon: "📈" },
     { href: "/taxi", label: "Taxi Rent", desc: "Book Noah, Private Car, Hiace", icon: "🚕" },
