@@ -83,9 +83,13 @@ export function EditBlogPostForm({ post, categories }: { post: Post; categories:
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(updateBlogPostAction, null);
 
-  useEffect(() => {
+  // Close the modal once per successful submit (adjusting state during render,
+  // not in an effect — see react.dev "You Might Not Need an Effect").
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
     if (state?.success) setOpen(false);
-  }, [state]);
+  }
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";

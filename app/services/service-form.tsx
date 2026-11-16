@@ -69,9 +69,12 @@ export function ServiceRequestForm({ services }: { services: Service[] }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(submitServiceRequestAction, null);
 
-  useEffect(() => {
+  // Close once per successful submit (adjusted during render, not in an effect)
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
     if (state?.success) { setOpen(false); setSelectedService(null); }
-  }, [state]);
+  }
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";

@@ -163,12 +163,11 @@ export function SettingsTabs({
     );
   }, [searchQuery]);
 
-  // If user searched and current tab doesn't match, auto-select first matching tab
-  useEffect(() => {
-    if (searchQuery.trim() && filteredTabs.length > 0 && !filteredTabs.some((t) => t.id === activeTab)) {
-      setActiveTab(filteredTabs[0].id);
-    }
-  }, [searchQuery, filteredTabs, activeTab]);
+  // If user searched and current tab doesn't match, auto-select first matching tab.
+  // Done during render (not in an effect); once set, the condition is false, so it can't loop.
+  if (searchQuery.trim() && filteredTabs.length > 0 && !filteredTabs.some((t) => t.id === activeTab)) {
+    setActiveTab(filteredTabs[0].id);
+  }
 
   const currentTabInfo = TABS.find((t) => t.id === activeTab) || TABS[0];
 

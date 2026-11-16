@@ -27,11 +27,15 @@ export function ProjectActions({ project }: { project: Project }) {
     }
   }
 
+  // Close the edit modal once per successful save (adjusted during render, not in an effect)
+  const [seenEditState, setSeenEditState] = useState(editState);
+  if (editState !== seenEditState) {
+    setSeenEditState(editState);
+    if (editState?.success) setEditOpen(false);
+  }
+
   useEffect(() => {
-    if (editState?.success) {
-      setEditOpen(false);
-      router.refresh();
-    }
+    if (editState?.success) router.refresh();
   }, [editState, router]);
 
   useEffect(() => {

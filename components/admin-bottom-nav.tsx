@@ -27,7 +27,12 @@ export function AdminBottomNav({ pendingPurchases, pendingDeposits, userName, us
   const [sheetOpen, setSheetOpen] = useState(false);
   const totalPending = pendingPurchases + pendingDeposits;
 
-  useEffect(() => { setSheetOpen(false); }, [pathname]);
+  // Close the "More" sheet on navigation (adjusted during render, not in an effect)
+  const [seenPathname, setSeenPathname] = useState(pathname);
+  if (pathname !== seenPathname) {
+    setSeenPathname(pathname);
+    setSheetOpen(false);
+  }
   useEffect(() => {
     document.body.style.overflow = sheetOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };

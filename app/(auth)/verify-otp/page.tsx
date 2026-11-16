@@ -24,10 +24,12 @@ function VerifyOtpForm() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  // Reset cooldown when resend succeeds
-  useEffect(() => {
+  // Reset cooldown each time a resend succeeds (adjusted during render, not in an effect)
+  const [seenResendState, setSeenResendState] = useState(resendState);
+  if (resendState !== seenResendState) {
+    setSeenResendState(resendState);
     if (resendState?.success) setCooldown(RESEND_COOLDOWN);
-  }, [resendState?.success]);
+  }
 
   const [otpValue, setOtpValue] = useState("");
   const inputs = useRef<(HTMLInputElement | null)[]>([]);

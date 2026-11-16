@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+// The theme lives on <html class="dark">, so read it from there and re-render
+// whenever that class changes (from this toggle or any other one on the page).
+function subscribeToThemeClass(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+const readIsDark = () => document.documentElement.classList.contains("dark");
+const readIsDarkOnServer = () => null; // unknown until hydrated
 
 export function ThemeScript() {
   const scriptContent = `
@@ -26,18 +36,10 @@ export function ThemeToggle({
   className?: string;
   compact?: boolean;
 }) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
-  }, []);
+  const isDarkOrUnknown = useSyncExternalStore(subscribeToThemeClass, readIsDark, readIsDarkOnServer);
 
   function toggleTheme() {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
+    const nextTheme = isDarkOrUnknown ? "light" : "dark";
     try {
       if (nextTheme === "dark") {
         document.documentElement.classList.add("dark");
@@ -51,7 +53,7 @@ export function ThemeToggle({
     }
   }
 
-  if (!mounted) {
+  if (isDarkOrUnknown === null) {
     // Avoid layout shift before mount
     return (
       <div
@@ -63,7 +65,7 @@ export function ThemeToggle({
     );
   }
 
-  const isDark = theme === "dark";
+  const isDark = isDarkOrUnknown;
 
   if (compact) {
     return (

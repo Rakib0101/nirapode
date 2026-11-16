@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
 import Link from "next/link";
 import { mediaUrl } from "@/lib/storage";
@@ -13,7 +14,7 @@ export default async function ForumPage({
   const { category = "All", q } = await searchParams;
   const session = await getSession();
 
-  const where: any = {};
+  const where: Prisma.ForumTopicWhereInput = {};
   if (category && category !== "All") {
     where.category = category;
   }

@@ -18,7 +18,12 @@ export function CreateServiceModal() {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(createServiceAction, null);
 
-  useEffect(() => { if (state?.success) setOpen(false); }, [state]);
+  // Close once per successful submit (adjusted during render, not in an effect)
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (state?.success) setOpen(false);
+  }
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };

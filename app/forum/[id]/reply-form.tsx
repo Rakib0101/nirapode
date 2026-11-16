@@ -1,23 +1,23 @@
 "use client";
 
-import { useActionState, useRef, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { createReplyAction } from "@/app/actions/forum";
 import { ImageUploadField } from "@/components/image-upload-field";
 
 export function ReplyForm({ topicId }: { topicId: string }) {
   const [state, action, pending] = useActionState(createReplyAction, null);
-  const formRef = useRef<HTMLFormElement>(null);
   const [formKey, setFormKey] = useState(0);
 
-  useEffect(() => {
-    if (state?.success) {
-      formRef.current?.reset();
-      setFormKey((k) => k + 1); // also clears ImageUploadField's attached photo
-    }
-  }, [state]);
+  // After a successful reply, bump the key to remount the form: that clears the
+  // textarea and ImageUploadField's attached photo. Adjusted during render, not in an effect.
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (state?.success) setFormKey((k) => k + 1);
+  }
 
   return (
-    <form key={formKey} ref={formRef} action={action} className="space-y-3">
+    <form key={formKey} action={action} className="space-y-3">
       <input type="hidden" name="topicId" value={topicId} />
       <textarea
         name="content"

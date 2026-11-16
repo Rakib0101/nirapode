@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -189,7 +190,7 @@ export async function updateAirTicketStatusAction(
     ]);
   }
 
-  const dataToUpdate: any = { status, adminNote: adminNote || null };
+  const dataToUpdate: Prisma.AirTicketRequestUpdateInput = { status, adminNote: adminNote || null };
   if (farePrice !== undefined) {
     dataToUpdate.price = farePrice;
   }

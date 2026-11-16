@@ -72,18 +72,24 @@ export function UserActionsMenu({ user, actorRole }: Props) {
     if (feedback?.success) router.refresh();
   }, [feedback?.success, router]);
 
+  // Close dialogs once per successful action (adjusted during render, not in an effect)
+  const [seenDeleteState, setSeenDeleteState] = useState(deleteState);
+  if (deleteState !== seenDeleteState) {
+    setSeenDeleteState(deleteState);
+    if (deleteState?.success) setDeleteOpen(false);
+  }
+  const [seenEditState, setSeenEditState] = useState(editState);
+  if (editState !== seenEditState) {
+    setSeenEditState(editState);
+    if (editState?.success) setEditOpen(false);
+  }
+
   useEffect(() => {
-    if (deleteState?.success) {
-      setDeleteOpen(false);
-      router.refresh();
-    }
+    if (deleteState?.success) router.refresh();
   }, [deleteState, router]);
 
   useEffect(() => {
-    if (editState?.success) {
-      setEditOpen(false);
-      router.refresh();
-    }
+    if (editState?.success) router.refresh();
   }, [editState, router]);
 
   useEffect(() => {
@@ -508,11 +514,12 @@ export function DirectAdjustWalletButton({
   const [open, setOpen] = useState(false);
   const [walletState, walletAction, walletPending] = useActionState(adjustWalletAction, null);
 
-  useEffect(() => {
-    if (walletState?.success) {
-      setOpen(false);
-    }
-  }, [walletState]);
+  // Close once per successful adjustment (adjusted during render, not in an effect)
+  const [seenWalletState, setSeenWalletState] = useState(walletState);
+  if (walletState !== seenWalletState) {
+    setSeenWalletState(walletState);
+    if (walletState?.success) setOpen(false);
+  }
 
   return (
     <>

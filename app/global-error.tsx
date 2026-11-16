@@ -31,6 +31,9 @@ export default function GlobalError({
             >
               Reload Page
             </button>
+            {/* A full page load on purpose: the root layout just crashed, so don't
+                client-navigate through the broken React tree with <Link>. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
               className="border border-slate-200 text-slate-700 text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"

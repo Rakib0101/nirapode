@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import {
   addPartnerCompanyAction,
   updatePartnerCompanyAction,
@@ -112,12 +112,15 @@ export function PartnerCompaniesForm({ companies: initial }: { companies: Compan
   const [addKey, setAddKey] = useState(0);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  // Clear the add form once per successful add (adjusted during render, not in an effect)
+  const [seenAddState, setSeenAddState] = useState(addState);
+  if (addState !== seenAddState) {
+    setSeenAddState(addState);
     if (addState?.success) {
       setAddLogoUrl("");
       setAddKey((k) => k + 1); // remounts the add form, clearing its uncontrolled text inputs
     }
-  }, [addState]);
+  }
 
   function handleToggle(id: string, current: boolean) {
     setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: !current } : c)));
@@ -134,7 +137,7 @@ export function PartnerCompaniesForm({ companies: initial }: { companies: Compan
     <div className="space-y-4">
       {companies.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl">
-          No partner companies added yet. Add one below — it'll appear near the bottom of the homepage.
+          No partner companies added yet. Add one below — it&apos;ll appear near the bottom of the homepage.
         </p>
       ) : (
         <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
