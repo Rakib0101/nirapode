@@ -3,6 +3,7 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminBottomNav } from "@/components/admin-bottom-nav";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getAdminAccess } from "@/lib/admin-permissions";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
@@ -24,6 +25,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!session) redirect("/admin-login");
   if (!ADMIN_ROLES.includes(session.role)) redirect("/dashboard");
+  const access = await getAdminAccess();
+  if (!access) redirect("/dashboard");
 
   const pendingCounts = await getPendingCounts();
   const userName = session.fullName ?? session.email.split("@")[0];
@@ -36,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         userRole={session.role}
         userEmail={session.email}
         pendingCounts={pendingCounts}
+        sections={access.sections}
       />
 
       {/* Page content */}
@@ -51,6 +55,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         pendingDeposits={pendingCounts.deposits}
         userName={userName}
         userRole={session.role}
+        sections={access.sections}
       />
     </div>
   );

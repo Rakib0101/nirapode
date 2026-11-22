@@ -1,17 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireAdminSection } from "@/lib/admin-permissions";
 import { notifyUser } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 type ActionState = { error?: string; success?: boolean } | null;
 
 async function requireAdmin() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("withdrawals");
   return session;
 }
 

@@ -1,9 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireAdminSection } from "@/lib/admin-permissions";
+import { isAdminSection } from "@/lib/admin-sections";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { Role } from "../../generated/prisma/enums";
 import { Prisma } from "../../generated/prisma/client";
 import { generateReferralCode } from "@/lib/commission";
@@ -21,9 +21,7 @@ const ROLE_RANK: Record<string, number> = {
 };
 
 async function requireAdminSession() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("users");
   return session;
 }
 
@@ -360,6 +358,38 @@ export async function changeUserRoleAction(
   } catch (err: unknown) {
     console.error("Change role error:", err);
     return { error: err instanceof Error ? err.message : "Failed to change user role." };
+  }
+}
+
+// ── Admin section permissions (SUPER_ADMIN only) ──────────────────────────────
+
+export async function setAdminPermissionsAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const session = await requireAdminSession();
+    if (session.role !== "SUPER_ADMIN")
+      return { error: "Only Super Admins can change admin access." };
+
+    const userId = formData.get("userId") as string;
+    const sections = [...new Set(formData.getAll("sections").map(String))].filter(isAdminSection);
+
+    const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+    if (!target) return { error: "User not found." };
+    if (target.role !== "ADMIN" && target.role !== "MODERATOR")
+      return { error: "Admin access can only be set for Admins and Moderators." };
+
+    await prisma.user.update({ where: { id: userId }, data: { adminPermissions: sections } });
+    revalidatePath("/admin", "layout");
+    return {
+      success: sections.length
+        ? `Access saved: ${sections.length} section${sections.length === 1 ? "" : "s"}.`
+        : "Access saved: no sections (dashboard only).",
+    };
+  } catch (err: unknown) {
+    console.error("Set admin permissions error:", err);
+    return { error: err instanceof Error ? err.message : "Failed to save admin access." };
   }
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { hasAdminSection } from "@/lib/admin-permissions";
 
 export async function GET(
   _request: NextRequest,
@@ -21,7 +22,7 @@ export async function GET(
     return new NextResponse("Ticket not found", { status: 404 });
   }
 
-  const isAdmin = ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role);
+  const isAdmin = await hasAdminSection("airTicket");
   if (!isAdmin && ticket.userId !== session.userId) {
     return new NextResponse("Forbidden", { status: 403 });
   }

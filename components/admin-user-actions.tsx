@@ -11,6 +11,7 @@ import {
   toggleAgentAction,
   adjustWalletAction,
 } from "@/app/actions/admin-users";
+import { AdminAccessDialog } from "@/components/admin-access-dialog";
 
 type User = {
   id: string;
@@ -22,6 +23,7 @@ type User = {
   fullName: string;
   email: string;
   phone: string | null;
+  adminPermissions?: string[];
 };
 
 type Props = {
@@ -42,6 +44,7 @@ export function UserActionsMenu({ user, actorRole }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
+  const [accessOpen, setAccessOpen] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -282,6 +285,19 @@ export function UserActionsMenu({ user, actorRole }: Props) {
             </>
           )}
 
+          {/* Admin access — SUPER_ADMIN only, for staff below them */}
+          {isSuperAdmin && (user.role === "ADMIN" || user.role === "MODERATOR") && (
+            <button
+              onClick={() => { setAccessOpen(true); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <svg className="w-4 h-4 text-purple-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+              Admin access
+            </button>
+          )}
+
           {/* Divider + Delete */}
           {canManage && (
             <>
@@ -425,6 +441,13 @@ export function UserActionsMenu({ user, actorRole }: Props) {
             </form>
           </div>
         </div>
+      )}
+
+      {accessOpen && (
+        <AdminAccessDialog
+          user={{ id: user.id, fullName: user.fullName, role: user.role, adminPermissions: user.adminPermissions ?? [] }}
+          onClose={() => setAccessOpen(false)}
+        />
       )}
 
       {walletOpen && (

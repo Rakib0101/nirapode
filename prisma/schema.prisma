@@ -158,6 +158,10 @@ model User {
   googleId          String?   @unique
   profilePhoto      String?
   role              Role      @default(USER)
+  // Admin panel sections an ADMIN/MODERATOR may use (keys from
+  // lib/admin-sections.ts). Ignored for SUPER_ADMIN (always everything) and
+  // for USER.
+  adminPermissions  String[]  @default([])
   isVerified        Boolean   @default(false)
   isActive          Boolean   @default(true)
   isAgent           Boolean   @default(false)

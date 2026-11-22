@@ -9,7 +9,7 @@ async function getUsers() {
     select: {
       id: true, fullName: true, email: true, nidNumber: true,
       phone: true, role: true, isVerified: true, isActive: true, createdAt: true,
-      isAgent: true, referralCode: true,
+      isAgent: true, referralCode: true, adminPermissions: true,
       wallet: { select: { balance: true } },
     },
   });
@@ -124,6 +124,7 @@ export default async function AdminUsersPage() {
                         id: u.id, role: u.role, isVerified: u.isVerified, isActive: u.isActive,
                         isAgent: u.isAgent, referralCode: u.referralCode,
                         fullName: u.fullName, email: u.email, phone: u.phone,
+                        adminPermissions: u.adminPermissions,
                       }}
                       actorRole={actorRole}
                     />

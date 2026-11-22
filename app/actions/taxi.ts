@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
+import { requireAdminSection } from "@/lib/admin-permissions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -13,9 +14,7 @@ type ActionState = { error?: string; success?: boolean; message?: string } | nul
 type TaxiStatus = "PENDING" | "ASSIGNED" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
 async function requireAdmin() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("taxi");
   return session;
 }
 

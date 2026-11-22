@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { hasAdminSection } from "@/lib/admin-permissions";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -13,7 +14,7 @@ export async function resolveLostFoundPostAction(id: string): Promise<void> {
   const post = await prisma.lostFoundPost.findUnique({ where: { id }, select: { userId: true } });
   if (!post) return;
 
-  const isAdmin = ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role);
+  const isAdmin = await hasAdminSection("pickPut");
   const isOwner = post.userId === session.userId;
   if (!isAdmin && !isOwner) return;
 
@@ -30,7 +31,7 @@ export async function removeLostFoundPostAction(id: string): Promise<void> {
   const post = await prisma.lostFoundPost.findUnique({ where: { id }, select: { userId: true } });
   if (!post) return;
 
-  const isAdmin = ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role);
+  const isAdmin = await hasAdminSection("pickPut");
   const isOwner = post.userId === session.userId;
   if (!isAdmin && !isOwner) return;
 
@@ -51,7 +52,7 @@ export async function deleteLostFoundPostAction(id: string): Promise<void> {
   const post = await prisma.lostFoundPost.findUnique({ where: { id }, select: { userId: true } });
   if (!post) return;
 
-  const isAdmin = ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role);
+  const isAdmin = await hasAdminSection("pickPut");
   const isOwner = post.userId === session.userId;
   if (!isAdmin && !isOwner) return;
 
@@ -120,7 +121,7 @@ export async function updateLostFoundPostAction(
   const session = await getSession();
   if (!session) return { error: "Unauthorized." };
 
-  const isAdmin = ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role);
+  const isAdmin = await hasAdminSection("pickPut");
   if (!isAdmin) return { error: "You don't have permission to edit this post." };
 
   const parse = updatePostSchema.safeParse({

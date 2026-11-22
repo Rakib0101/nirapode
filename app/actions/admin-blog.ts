@@ -1,8 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
+import { requireAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -21,9 +20,7 @@ export async function createBlogPostAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("blog");
 
   const parse = postSchema.safeParse({
     title: formData.get("title"),
@@ -62,9 +59,7 @@ export async function createBlogPostAction(
 // ── Update blog post ──────────────────────────────────────────────────────────
 
 async function requireBlogAdmin() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("blog");
   return session;
 }
 

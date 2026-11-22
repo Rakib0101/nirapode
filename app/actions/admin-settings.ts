@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { checkAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
 import { COMMISSION_MODULES, saveCommissionSetting, savePlatformCutSetting, type CommissionMode } from "@/lib/commission";
 import { saveShareSgdRate, saveShare4Amounts, saveShare4ClosedDates } from "@/lib/share-pricing";
@@ -11,8 +11,8 @@ import { saveTransferFeeSetting } from "@/lib/wallet";
 type State = { error?: string; success?: boolean } | null;
 
 export async function saveCurrencySettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -85,8 +85,8 @@ export async function saveCurrencySettingsAction(_prev: State, formData: FormDat
 // ── Commission rates (per module: taxi / air ticket / service / share) ────────
 
 export async function saveCommissionSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -119,8 +119,8 @@ export async function saveCommissionSettingsAction(_prev: State, formData: FormD
 // ── Platform commission rates (real, paid into the shared Platform Wallet) ───
 
 export async function savePlatformCutSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -153,8 +153,8 @@ export async function savePlatformCutSettingsAction(_prev: State, formData: Form
 // ── User-to-user wallet transfer fee ─────────────────────────────────────────
 
 export async function saveTransferFeeAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -176,8 +176,8 @@ export async function saveTransferFeeAction(_prev: State, formData: FormData): P
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function saveAdminNotificationEmailAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -199,8 +199,8 @@ export async function saveAdminNotificationEmailAction(_prev: State, formData: F
 // Per-module override (Share 4 / Share 6) — both fields optional. Leaving
 // either blank clears that override, falling back to the global contact above.
 export async function saveModuleNotificationAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -225,8 +225,8 @@ export async function saveModuleNotificationAction(_prev: State, formData: FormD
 // ── Share pricing rate (SGD → BDT, always admin-defined, never live) ──────────
 
 export async function saveShareRateAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -247,8 +247,8 @@ export async function saveShareRateAction(_prev: State, formData: FormData): Pro
 // ── Share 4 (buy-request) offer amounts — fully admin-configurable ───────────
 
 export async function saveShare4AmountsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -272,8 +272,8 @@ export async function saveShare4AmountsAction(_prev: State, formData: FormData):
 // ── Share 4 (buy-request) closed dates — block Sat/Sun/public holidays ───────
 
 export async function saveShare4ClosedDatesAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -298,8 +298,8 @@ export async function saveShare4ClosedDatesAction(_prev: State, formData: FormDa
 // ── Bank rates ────────────────────────────────────────────────────────────────
 
 async function authAdmin() {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     throw new Error("Unauthorized");
   }
 }
@@ -341,8 +341,8 @@ export async function updateBankRateAction(_prev: State, formData: FormData): Pr
 }
 
 export async function toggleBankRateAction(id: string, isActive: boolean): Promise<void> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) return;
+  const session = await checkAdminSection("settings");
+  if (!session) return;
 
   await prisma.bankRate.update({ where: { id }, data: { isActive } });
 
@@ -351,8 +351,8 @@ export async function toggleBankRateAction(id: string, isActive: boolean): Promi
 }
 
 export async function deleteBankRateAction(id: string): Promise<void> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) return;
+  const session = await checkAdminSection("settings");
+  if (!session) return;
 
   await prisma.bankRate.delete({ where: { id } });
 
@@ -417,8 +417,8 @@ export async function updatePaymentAccountAction(_prev: State, formData: FormDat
 }
 
 export async function togglePaymentAccountAction(id: string, isActive: boolean): Promise<void> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) return;
+  const session = await checkAdminSection("settings");
+  if (!session) return;
 
   await prisma.paymentAccount.update({ where: { id }, data: { isActive } });
 
@@ -426,8 +426,8 @@ export async function togglePaymentAccountAction(id: string, isActive: boolean):
 }
 
 export async function deletePaymentAccountAction(id: string): Promise<void> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) return;
+  const session = await checkAdminSection("settings");
+  if (!session) return;
 
   await prisma.paymentAccount.delete({ where: { id } });
 
@@ -450,8 +450,8 @@ export async function getAdSenseSettings(): Promise<{ enabled: boolean; clientId
 }
 
 export async function saveAdSenseSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -486,8 +486,8 @@ export async function getReminderPriceSetting(): Promise<number> {
 }
 
 export async function saveReminderSlotPriceAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -537,8 +537,8 @@ export async function getSmtpSettings() {
 }
 
 export async function saveSmtpSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -593,8 +593,8 @@ export async function saveSmtpSettingsAction(_prev: State, formData: FormData): 
 }
 
 export async function testSmtpEmailAction(testEmail: string): Promise<{ success: boolean; message: string }> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { success: false, message: "Unauthorized." };
   }
 
@@ -721,8 +721,8 @@ export async function getWhatsAppApiSettings() {
 }
 
 export async function saveWhatsAppApiSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -781,8 +781,8 @@ export async function getTwilioSettings() {
 }
 
 export async function saveTwilioSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -829,8 +829,8 @@ export async function saveTwilioSettingsAction(_prev: State, formData: FormData)
 }
 
 export async function testTwilioWhatsAppAction(toPhone: string): Promise<{ success: boolean; message: string }> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { success: false, message: "Unauthorized." };
   }
   if (!toPhone?.trim()) {
@@ -849,8 +849,8 @@ export async function testTwilioWhatsAppAction(toPhone: string): Promise<{ succe
 }
 
 export async function saveSiteContactSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 
@@ -939,8 +939,8 @@ export async function getPinAuthSettings(): Promise<PinAuthSettings> {
 }
 
 export async function savePinAuthSettingsAction(_prev: State, formData: FormData): Promise<State> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("settings");
+  if (!session) {
     return { error: "Unauthorized." };
   }
 

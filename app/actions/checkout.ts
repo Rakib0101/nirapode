@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { requireAdminSection } from "@/lib/admin-permissions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
@@ -13,9 +14,7 @@ import { isValidImageRef } from "@/lib/storage";
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 async function requireAdmin() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("checkouts");
   return session;
 }
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import Link from "next/link";
+import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 
 async function getStats() {
   const [
@@ -47,7 +48,9 @@ const ROLE_BADGE: Record<string, string> = {
   USER: "bg-gray-100 text-gray-600",
 };
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+  const { denied } = await searchParams;
+  const deniedLabel = ADMIN_SECTIONS.find((s) => s.key === denied)?.label;
   const [session, stats] = await Promise.all([getSession(), getStats()]);
   const firstName = (session?.fullName ?? session?.email ?? "Admin").split(" ")[0];
   const totalPending =
@@ -138,6 +141,12 @@ export default async function AdminDashboard() {
           </span>
         )}
       </div>
+
+      {deniedLabel && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          You don&apos;t have access to <strong>{deniedLabel}</strong>. Ask a Super Admin to give you access.
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -1,14 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { checkAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
 
 type State = { error?: string; success?: boolean } | null;
 
 async function authAdmin() {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("partners");
+  if (!session) {
     throw new Error("Unauthorized");
   }
 }
@@ -55,16 +55,16 @@ export async function updatePartnerCompanyAction(_prev: State, formData: FormDat
 }
 
 export async function togglePartnerCompanyAction(id: string, isActive: boolean): Promise<void> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) return;
+  const session = await checkAdminSection("partners");
+  if (!session) return;
 
   await prisma.partnerCompany.update({ where: { id }, data: { isActive } });
   revalidatePartnerPaths();
 }
 
 export async function deletePartnerCompanyAction(id: string): Promise<void> {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) return;
+  const session = await checkAdminSection("partners");
+  if (!session) return;
 
   await prisma.partnerCompany.delete({ where: { id } });
   revalidatePartnerPaths();

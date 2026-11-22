@@ -1,9 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { creditCommission } from "@/lib/commission";
 import { notifyUser } from "@/lib/notifications";
@@ -25,9 +24,7 @@ function averagePurchasePrice(
 }
 
 async function requireAdmin() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN"].includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("shares");
   return session;
 }
 

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { checkAdminSection } from "@/lib/admin-permissions";
 import { notifyAdmin } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -9,8 +10,8 @@ import { redirect } from "next/navigation";
 type State = { error?: string; success?: boolean; message?: string } | null;
 
 async function authAdmin() {
-  const session = await getSession();
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  const session = await checkAdminSection("products");
+  if (!session) {
     throw new Error("Unauthorized");
   }
   return session;

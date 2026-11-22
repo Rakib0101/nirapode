@@ -1,5 +1,6 @@
 "use client";
 
+import { sectionForPath } from "@/lib/admin-sections";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -115,12 +116,23 @@ type Props = {
   userRole: string;
   userEmail: string;
   pendingCounts?: AdminPendingCounts;
+  // Admin sections this account may use (lib/admin-sections.ts); links to
+  // the rest are hidden.
+  sections: string[];
 };
 
-export function AdminSidebar({ userName, userRole, userEmail, pendingCounts }: Props) {
+export function AdminSidebar({ userName, userRole, userEmail, pendingCounts, sections }: Props) {
   const pathname = usePathname();
 
-  const allHrefs = nav.flatMap((group) => group.items.map((item) => item.href));
+  const allowed = (href: string) => {
+    const section = sectionForPath(href);
+    return section === null || sections.includes(section);
+  };
+  const visibleNav = nav
+    .map((group) => ({ ...group, items: group.items.filter((item) => allowed(item.href)) }))
+    .filter((group) => group.items.length > 0);
+
+  const allHrefs = visibleNav.flatMap((group) => group.items.map((item) => item.href));
   const bestMatch = allHrefs
     .filter((href) => (href === "/admin" ? pathname === "/admin" || pathname === "/admin/" : pathname.startsWith(href)))
     .sort((a, b) => b.length - a.length)[0];
@@ -158,7 +170,7 @@ export function AdminSidebar({ userName, userRole, userEmail, pendingCounts }: P
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-        {nav.map((group) => (
+        {visibleNav.map((group) => (
           <div key={group.title}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1">
               {group.title}

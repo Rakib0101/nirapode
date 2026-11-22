@@ -2,8 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { requireAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getReferredByAgentId } from "@/lib/commission";
 import { notifyAdmin, notifyUser } from "@/lib/notifications";
@@ -72,9 +72,7 @@ export async function updateServiceRequestStatusAction(
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "REJECTED",
   adminNote?: string
 ) {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (!["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(session.role)) redirect("/dashboard");
+  await requireAdminSection("apply");
 
   const request = await prisma.serviceRequest.update({
     where: { id },

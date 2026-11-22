@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { hasAdminSection, requireAdminSection } from "@/lib/admin-permissions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -15,7 +16,6 @@ type Result = { error?: string; success?: boolean };
 
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
 async function requireUser() {
   const session = await getSession();
@@ -24,8 +24,7 @@ async function requireUser() {
 }
 
 async function requireAdmin() {
-  const session = await requireUser();
-  if (!ADMIN_ROLES.includes(session.role)) redirect("/dashboard");
+  const session = await requireAdminSection("pickPut");
   return session;
 }
 
@@ -159,7 +158,7 @@ export async function closeTripAction(tripId: string): Promise<Result> {
   const session = await requireUser();
   const trip = await prisma.pickPutTrip.findUnique({ where: { id: tripId }, select: { travelerId: true } });
   if (!trip) return { error: "Trip not found." };
-  if (trip.travelerId !== session.userId && !ADMIN_ROLES.includes(session.role)) return { error: "Not allowed." };
+  if (trip.travelerId !== session.userId && !(await hasAdminSection("pickPut"))) return { error: "Not allowed." };
 
   return run(async () => {
     await prisma.pickPutTrip.update({ where: { id: tripId }, data: { status: "CLOSED" } });
@@ -291,7 +290,7 @@ async function loadBookingForTraveler(bookingId: string) {
     include: { trip: { select: { travelerId: true } }, customer: { select: { email: true, phone: true } } },
   });
   if (!booking) return { error: "Booking not found." } as const;
-  const isAdmin = ADMIN_ROLES.includes(session.role);
+  const isAdmin = await hasAdminSection("pickPut");
   if (booking.trip.travelerId !== session.userId && !isAdmin) return { error: "Not allowed." } as const;
   return { booking, isAdmin } as const;
 }

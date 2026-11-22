@@ -2,15 +2,15 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { checkAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { notifyAdmin, notifyUser } from "@/lib/notifications";
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
 async function requireAdmin() {
-  const session = await getSession();
-  if (!session || !ADMIN_ROLES.includes(session.role)) throw new Error("Unauthorized");
+  const session = await checkAdminSection("apply");
+  if (!session) throw new Error("Unauthorized");
   return session;
 }
 

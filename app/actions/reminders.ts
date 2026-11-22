@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { checkAdminSection } from "@/lib/admin-permissions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deliverReminder, sendDueReminders } from "@/lib/reminders";
@@ -219,8 +220,7 @@ export async function triggerTestReminderAction(slotIndex: number) {
 
 // Admin: send all due reminders immediately (same as the scheduled job).
 export async function runDueRemindersAction(): Promise<{ error?: string; message?: string }> {
-  const session = await requireUser();
-  if (!["SUPER_ADMIN", "ADMIN"].includes(session.role)) return { error: "Unauthorized." };
+  if (!(await checkAdminSection("settings"))) return { error: "Unauthorized." };
   const { due, sent } = await sendDueReminders();
   return { message: due === 0 ? "No reminders are due right now." : `Sent ${sent} of ${due} due reminder(s).` };
 }
