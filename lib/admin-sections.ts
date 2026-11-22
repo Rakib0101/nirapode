@@ -16,6 +16,7 @@ export const ADMIN_SECTIONS = [
   { key: "pickPut", label: "Pick & Put / Lost & Found", hrefs: ["/admin/pick-put", "/admin/lost-found"] },
   { key: "apply", label: "Apply / Services", hrefs: ["/admin/apply"] },
   { key: "products", label: "Products", hrefs: ["/admin/products"] },
+  { key: "gcash", label: "SGD → GCash transfers", hrefs: ["/admin/gcash"] },
   { key: "partners", label: "Partner companies", hrefs: ["/admin/partner-companies"] },
   { key: "settings", label: "Settings (rates, accounts, site)", hrefs: ["/admin/settings"] },
 ] as const;

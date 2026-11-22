@@ -64,6 +64,25 @@ export default async function ServicesPage() {
               <span>→</span>
             </Link>
           </div>
+
+          {/* SGD → GCash transfer service */}
+          <div className="mt-3 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent border border-sky-500/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="font-bold text-foreground text-sm flex items-center gap-2">
+                <span>💸</span> Send to GCash (SGD → Pesos)
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Pay in Singapore Dollars and we send Pesos to any GCash account. Upload your payment proof; we send you ours.
+              </p>
+            </div>
+            <Link
+              href="/services/gcash"
+              className="inline-flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-xs whitespace-nowrap"
+            >
+              <span>Send to GCash</span>
+              <span>→</span>
+            </Link>
+          </div>
         </div>
       </div>
 

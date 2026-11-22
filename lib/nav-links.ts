@@ -42,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
     links: [
       { href: "/services", label: "Services" },
       { href: "/services/cv-builder", label: "CV Builder" },
+      { href: "/services/gcash", label: "Send to GCash" },
       { href: "/apply", label: "Apply" },
       { href: "/taxi", label: "Taxi Rent" },
       { href: "/air-ticket", label: "Air Ticket" },

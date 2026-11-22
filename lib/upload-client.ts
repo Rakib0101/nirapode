@@ -3,7 +3,7 @@
 // and posting several megabytes of text through a server action.
 export const MAX_UPLOAD_MB = 4;
 
-export type UploadPurpose = "deposit" | "payment" | "forum" | "product";
+export type UploadPurpose = "deposit" | "payment" | "transfer" | "forum" | "product";
 
 export async function uploadImageFile(file: File, purpose: UploadPurpose): Promise<string> {
   if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {

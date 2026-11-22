@@ -43,6 +43,10 @@ const nav = [
         label: "Checkouts", href: "/admin/checkouts",
         icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m-10-4h10m-10 4a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z" /></svg>,
       },
+      {
+        label: "SGD → GCash", href: "/admin/gcash",
+        icon: <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>,
+      },
     ],
   },
   {
@@ -109,6 +113,7 @@ export type AdminPendingCounts = {
   taxi?: number;
   airTicket?: number;
   checkouts?: number;
+  gcash?: number;
 };
 
 type Props = {
@@ -150,6 +155,7 @@ export function AdminSidebar({ userName, userRole, userEmail, pendingCounts, sec
     else if (href === "/admin/taxi") count = pendingCounts.taxi ?? 0;
     else if (href === "/admin/air-ticket") count = pendingCounts.airTicket ?? 0;
     else if (href === "/admin/checkouts") count = pendingCounts.checkouts ?? 0;
+    else if (href === "/admin/gcash") count = pendingCounts.gcash ?? 0;
 
     if (count <= 0) return null;
     return (

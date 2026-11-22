@@ -8,7 +8,7 @@ import { getAdminAccess } from "@/lib/admin-permissions";
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 
 async function getPendingCounts() {
-  const [sharePurchases, shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts] = await Promise.all([
+  const [sharePurchases, shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts, gcash] = await Promise.all([
     prisma.sharePurchaseRequest.count({ where: { status: "PENDING" } }),
     prisma.shareBuyRequest.count({ where: { status: "PENDING" } }),
     prisma.depositRequest.count({ where: { status: "PENDING" } }),
@@ -16,8 +16,9 @@ async function getPendingCounts() {
     prisma.taxiRequest.count({ where: { status: "PENDING" } }),
     prisma.airTicketRequest.count({ where: { status: "PENDING" } }),
     prisma.checkout.count({ where: { status: "AWAITING_PAYMENT" } }),
+    prisma.gcashTransfer.count({ where: { status: "PENDING" } }),
   ]);
-  return { purchases: sharePurchases + shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts };
+  return { purchases: sharePurchases + shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts, gcash };
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

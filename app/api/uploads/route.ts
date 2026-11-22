@@ -14,6 +14,7 @@ import {
 const PURPOSES = {
   deposit: { bucket: RECEIPTS_BUCKET, folder: "deposits" },
   payment: { bucket: RECEIPTS_BUCKET, folder: "payments" },
+  transfer: { bucket: RECEIPTS_BUCKET, folder: "gcash-transfers" },
   forum: { bucket: MEDIA_BUCKET, folder: "forum" },
   product: { bucket: MEDIA_BUCKET, folder: "products" },
 } as const;
