@@ -15,7 +15,8 @@ async function getPendingCounts() {
     prisma.withdrawalRequest.count({ where: { status: "PENDING" } }),
     prisma.taxiRequest.count({ where: { status: "PENDING" } }),
     prisma.airTicketRequest.count({ where: { status: "PENDING" } }),
-    prisma.checkout.count({ where: { status: "AWAITING_PAYMENT" } }),
+    // Only proofs waiting for review need an admin; unpaid invoices wait on the customer.
+    prisma.checkout.count({ where: { status: "PROOF_SUBMITTED" } }),
     prisma.gcashTransfer.count({ where: { status: "PENDING" } }),
   ]);
   return { purchases: sharePurchases + shareBuyRequests, deposits, withdrawals, taxi, airTicket, checkouts, gcash };

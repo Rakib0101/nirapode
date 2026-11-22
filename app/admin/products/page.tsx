@@ -85,7 +85,8 @@ export default async function AdminProductsPage() {
         </section>
 
         {/* Orders */}
-        <section>
+        {/* id: the dashboard's "product orders waiting" row jumps here, past the catalog. */}
+        <section id="orders" className="scroll-mt-4">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Orders ({orders.length}{pendingCount > 0 ? ` · ${pendingCount} pending` : ""})
           </h2>

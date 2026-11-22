@@ -1,7 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import Link from "next/link";
-import { ADMIN_SECTIONS } from "@/lib/admin-sections";
+import { ADMIN_SECTIONS, sectionForPath, type AdminSection } from "@/lib/admin-sections";
+import { getAdminAccess } from "@/lib/admin-permissions";
+
+const ALERT_TONES: Record<string, string> = {
+  amber: "bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100",
+  purple: "bg-purple-50 border-purple-200 text-purple-900 hover:bg-purple-100",
+  orange: "bg-orange-50 border-orange-200 text-orange-900 hover:bg-orange-100",
+  rose: "bg-rose-50 border-rose-200 text-rose-900 hover:bg-rose-100",
+  sky: "bg-sky-50 border-sky-200 text-sky-900 hover:bg-sky-100",
+  emerald: "bg-emerald-50 border-emerald-200 text-emerald-900 hover:bg-emerald-100",
+  teal: "bg-teal-50 border-teal-200 text-teal-900 hover:bg-teal-100",
+  yellow: "bg-yellow-50 border-yellow-200 text-yellow-900 hover:bg-yellow-100",
+};
 
 async function getStats() {
   const [
@@ -9,6 +21,7 @@ async function getStats() {
     pendingPurchases, pendingDeposits,
     pendingWithdrawals, pendingTaxi,
     pendingAirTicket, pendingBuyRequests, pendingCheckouts,
+    unpaidCheckouts, pendingProductOrders, pendingGcash,
     activeProjects, totalShares,
     recentUsers,
   ] = await Promise.all([
@@ -20,7 +33,12 @@ async function getStats() {
     prisma.taxiRequest.count({ where: { status: "PENDING" } }),
     prisma.airTicketRequest.count({ where: { status: "PENDING" } }),
     prisma.shareBuyRequest.count({ where: { status: "PENDING" } }),
+    // Customer has uploaded proof: the admin must approve or reject it.
+    prisma.checkout.count({ where: { status: "PROOF_SUBMITTED" } }),
+    // Invoice sent, customer hasn't paid yet: nothing for the admin to do.
     prisma.checkout.count({ where: { status: "AWAITING_PAYMENT" } }),
+    prisma.productOrder.count({ where: { status: "PENDING" } }),
+    prisma.gcashTransfer.count({ where: { status: "PENDING" } }),
     prisma.project.count({ where: { status: "ACTIVE" } }),
     prisma.shareOwnership.aggregate({ _sum: { quantity: true } }),
     prisma.user.findMany({
@@ -35,6 +53,7 @@ async function getStats() {
     pendingPurchases, pendingDeposits,
     pendingWithdrawals, pendingTaxi,
     pendingAirTicket, pendingBuyRequests, pendingCheckouts,
+    unpaidCheckouts, pendingProductOrders, pendingGcash,
     activeProjects,
     totalShares: totalShares._sum.quantity ?? 0,
     recentUsers,
@@ -51,16 +70,27 @@ const ROLE_BADGE: Record<string, string> = {
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const { denied } = await searchParams;
   const deniedLabel = ADMIN_SECTIONS.find((s) => s.key === denied)?.label;
-  const [session, stats] = await Promise.all([getSession(), getStats()]);
+  const [session, stats, access] = await Promise.all([getSession(), getStats(), getAdminAccess()]);
   const firstName = (session?.fullName ?? session?.email ?? "Admin").split(" ")[0];
-  const totalPending =
-    stats.pendingPurchases +
-    stats.pendingDeposits +
-    stats.pendingWithdrawals +
-    stats.pendingTaxi +
-    stats.pendingAirTicket +
-    stats.pendingBuyRequests +
-    stats.pendingCheckouts;
+  const canSee = (section: AdminSection) => !!access?.sections.includes(section);
+
+  // Everything waiting on an admin. Each count gets its own tappable row, and
+  // the badge total is exactly the sum of the rows shown, so it can never say
+  // "1 Action Required" with nothing to tap.
+  const alerts = [
+    { section: "shares", count: stats.pendingPurchases, href: "/admin/purchases", icon: "📋", tone: "amber", title: (n: number) => `${n} share purchase${n > 1 ? "s" : ""} waiting`, hint: "Tap to review and approve" },
+    { section: "shares", count: stats.pendingBuyRequests, href: "/admin/purchases", icon: "🤝", tone: "purple", title: (n: number) => `${n} Share 4 buy request${n > 1 ? "s" : ""}`, hint: "Tap to review in Purchases" },
+    { section: "deposits", count: stats.pendingDeposits, href: "/admin/deposits", icon: "💳", tone: "orange", title: (n: number) => `${n} deposit${n > 1 ? "s" : ""} awaiting verification`, hint: "Tap to verify payment proof" },
+    { section: "withdrawals", count: stats.pendingWithdrawals, href: "/admin/withdrawals", icon: "💸", tone: "rose", title: (n: number) => `${n} withdrawal request${n > 1 ? "s" : ""}`, hint: "Tap to process payouts" },
+    { section: "gcash", count: stats.pendingGcash, href: "/admin/gcash", icon: "🇵🇭", tone: "sky", title: (n: number) => `${n} SGD → GCash request${n > 1 ? "s" : ""}`, hint: "Tap to check payment and send Pesos" },
+    { section: "products", count: stats.pendingProductOrders, href: "/admin/products#orders", icon: "🛍️", tone: "emerald", title: (n: number) => `${n} product order${n > 1 ? "s" : ""} waiting`, hint: "Tap to confirm and bill the customer" },
+    { section: "checkouts", count: stats.pendingCheckouts, href: "/admin/checkouts", icon: "🧾", tone: "teal", title: (n: number) => `${n} checkout payment${n > 1 ? "s" : ""} to verify`, hint: "Customer uploaded proof: tap to approve" },
+    { section: "taxi", count: stats.pendingTaxi, href: "/admin/taxi", icon: "🚕", tone: "yellow", title: (n: number) => `${n} taxi request${n > 1 ? "s" : ""} waiting`, hint: "Tap to assign driver / quote price" },
+    { section: "airTicket", count: stats.pendingAirTicket, href: "/admin/air-ticket", icon: "✈️", tone: "sky", title: (n: number) => `${n} flight booking request${n > 1 ? "s" : ""}`, hint: "Tap to assign manager / quote options" },
+  ] satisfies { section: AdminSection; count: number; href: string; icon: string; tone: string; title: (n: number) => string; hint: string }[];
+  const visibleAlerts = alerts.filter((a) => a.count > 0 && canSee(a.section));
+  const totalPending = visibleAlerts.reduce((sum, a) => sum + a.count, 0);
+  const showUnpaid = stats.unpaidCheckouts > 0 && canSee("checkouts");
 
   const statCards = [
     {
@@ -123,7 +153,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     { href: "/admin/blog",      label: "Blog",        icon: "📝" },
     { href: "/admin/islamic",   label: "Islamic",     icon: "🌙" },
     { href: "/admin/pick-put",label: "Pick & Put",  icon: "🔍" },
-  ];
+    { href: "/admin/products",  label: "Products",    icon: "🛍️" },
+    { href: "/admin/gcash",     label: "SGD → GCash", icon: "🇵🇭" },
+  ].filter((q) => {
+    const section = sectionForPath(q.href);
+    return section === null || canSee(section);
+  });
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -135,10 +170,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <h1 className="text-2xl font-bold text-foreground">{firstName}</h1>
         </div>
         {totalPending > 0 && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full">
+          <a
+            href="#pending"
+            className="flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full hover:bg-red-100 active:scale-95 transition-all"
+          >
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             {totalPending} Action{totalPending > 1 ? "s" : ""} Required
-          </span>
+          </a>
         )}
       </div>
 
@@ -169,113 +207,40 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         ))}
       </div>
 
-      {/* Urgent alerts */}
-      {totalPending > 0 && (
-        <div className="space-y-2">
-          {stats.pendingPurchases > 0 && (
+      {/* Waiting on an admin — the badge above links here */}
+      {(visibleAlerts.length > 0 || showUnpaid) && (
+        <div id="pending" className="space-y-2 scroll-mt-4">
+          {visibleAlerts.map((a) => (
             <Link
-              href="/admin/purchases"
-              className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 hover:bg-amber-100 active:scale-[.99] transition-all"
+              key={a.href + a.icon}
+              href={a.href}
+              className={`flex items-center justify-between rounded-xl px-4 py-3.5 border active:scale-[.99] transition-all ${ALERT_TONES[a.tone]}`}
             >
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center text-white text-sm shrink-0">📋</span>
+                <span className="w-8 h-8 rounded-lg bg-white/70 flex items-center justify-center text-base shrink-0">{a.icon}</span>
                 <div>
-                  <p className="text-sm font-semibold text-amber-900">
-                    {stats.pendingPurchases} share purchase{stats.pendingPurchases > 1 ? "s" : ""} waiting
-                  </p>
-                  <p className="text-xs text-amber-700">Tap to review and approve</p>
+                  <p className="text-sm font-semibold">{a.title(a.count)}</p>
+                  <p className="text-xs opacity-80">{a.hint}</p>
                 </div>
               </div>
-              <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+              <svg className="w-4 h-4 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
             </Link>
-          )}
-          {stats.pendingDeposits > 0 && (
+          ))}
+          {showUnpaid && (
             <Link
-              href="/admin/deposits"
-              className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl px-4 py-3.5 hover:bg-orange-100 active:scale-[.99] transition-all"
+              href="/admin/checkouts"
+              className="flex items-center justify-between rounded-xl px-4 py-3 border border-border bg-white text-muted-foreground hover:bg-muted active:scale-[.99] transition-all"
             >
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-orange-400 flex items-center justify-center text-white text-sm shrink-0">💳</span>
+                <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base shrink-0">⏳</span>
                 <div>
-                  <p className="text-sm font-semibold text-orange-900">
-                    {stats.pendingDeposits} deposit{stats.pendingDeposits > 1 ? "s" : ""} awaiting verification
+                  <p className="text-sm font-medium text-foreground">
+                    {stats.unpaidCheckouts} invoice{stats.unpaidCheckouts > 1 ? "s" : ""} waiting for customer payment
                   </p>
-                  <p className="text-xs text-orange-700">Tap to verify payment proof</p>
+                  <p className="text-xs">Nothing to do until they pay. Tap to see them.</p>
                 </div>
               </div>
-              <svg className="w-4 h-4 text-orange-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </Link>
-          )}
-          {stats.pendingWithdrawals > 0 && (
-            <Link
-              href="/admin/withdrawals"
-              className="flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl px-4 py-3.5 hover:bg-rose-100 active:scale-[.99] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-rose-400 flex items-center justify-center text-white text-sm shrink-0">💸</span>
-                <div>
-                  <p className="text-sm font-semibold text-rose-900">
-                    {stats.pendingWithdrawals} withdrawal request{stats.pendingWithdrawals > 1 ? "s" : ""}
-                  </p>
-                  <p className="text-xs text-rose-700">Tap to process payouts</p>
-                </div>
-              </div>
-              <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </Link>
-          )}
-          {stats.pendingTaxi > 0 && (
-            <Link
-              href="/admin/taxi"
-              className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3.5 hover:bg-yellow-100 active:scale-[.99] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-yellow-400 flex items-center justify-center text-white text-sm shrink-0">🚕</span>
-                <div>
-                  <p className="text-sm font-semibold text-yellow-900">
-                    {stats.pendingTaxi} taxi request{stats.pendingTaxi > 1 ? "s" : ""} waiting
-                  </p>
-                  <p className="text-xs text-yellow-700">Tap to assign driver / quote price</p>
-                </div>
-              </div>
-              <svg className="w-4 h-4 text-yellow-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </Link>
-          )}
-          {stats.pendingAirTicket > 0 && (
-            <Link
-              href="/admin/air-ticket"
-              className="flex items-center justify-between bg-sky-50 border border-sky-200 rounded-xl px-4 py-3.5 hover:bg-sky-100 active:scale-[.99] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-sky-400 flex items-center justify-center text-white text-sm shrink-0">✈️</span>
-                <div>
-                  <p className="text-sm font-semibold text-sky-900">
-                    {stats.pendingAirTicket} flight booking request{stats.pendingAirTicket > 1 ? "s" : ""}
-                  </p>
-                  <p className="text-xs text-sky-700">Tap to assign manager / quote options</p>
-                </div>
-              </div>
-              <svg className="w-4 h-4 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </Link>
-          )}
-          {/* Share 4 buy requests are reviewed on /admin/purchases, not
-              /admin/shares (which only handles Share 6 listings & trades).
-              The Purchases badge already counts them — see
-              pendingCounts.purchases in app/admin/layout.tsx. */}
-          {stats.pendingBuyRequests > 0 && (
-            <Link
-              href="/admin/purchases"
-              className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-xl px-4 py-3.5 hover:bg-purple-100 active:scale-[.99] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-purple-400 flex items-center justify-center text-white text-sm shrink-0">🤝</span>
-                <div>
-                  <p className="text-sm font-semibold text-purple-900">
-                    {stats.pendingBuyRequests} Share 4 buy request{stats.pendingBuyRequests > 1 ? "s" : ""}
-                  </p>
-                  <p className="text-xs text-purple-700">Tap to review in Purchases</p>
-                </div>
-              </div>
-              <svg className="w-4 h-4 text-purple-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
             </Link>
           )}
         </div>
