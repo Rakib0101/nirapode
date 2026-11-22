@@ -153,7 +153,7 @@ export function SendMoneyForm({
         disabled={pending || total > balance || !hasSecurityAuth}
         className="w-full bg-brand text-white rounded-xl py-3 text-sm font-semibold hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
       >
-        {pending ? "Sending…" : !hasSecurityAuth ? "Please Set Security PIN to Send Money" : "Send Money"}
+        {pending ? "Sending…" : !hasSecurityAuth ? "Please Set Security PIN to Send Money" : "Send to User"}
       </button>
     </form>
   );

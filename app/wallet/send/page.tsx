@@ -28,11 +28,11 @@ export default async function SendMoneyPage() {
             My Wallet
           </Link>
           <span>/</span>
-          <span className="text-foreground">Send Money</span>
+          <span className="text-foreground">Send to User</span>
         </div>
 
         <div className="bg-white rounded-2xl border border-border p-7">
-          <h1 className="text-xl font-bold text-foreground mb-1">Send Money</h1>
+          <h1 className="text-xl font-bold text-foreground mb-1">Send to User</h1>
           <p className="text-sm text-muted-foreground mb-6">
             Transfer from your wallet to another member instantly, using their email or phone number.
           </p>

@@ -72,7 +72,7 @@ export default async function WalletPage() {
               href="/wallet/send"
               className="inline-block bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-5 py-2.5 rounded-xl border border-white/30 transition-colors"
             >
-              Send Money
+              Send to User
             </Link>
           </div>
         </div>

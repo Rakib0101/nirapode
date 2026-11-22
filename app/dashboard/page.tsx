@@ -1,13 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { CREDIT_TX_TYPES, WALLET_TX_LABELS } from "@/lib/wallet-tx";
 import { BalanceCard } from "@/components/balance-card";
 import Link from "next/link";
 
 async function getDashboardData(userId: string) {
   try {
-    const [user, wallet, ownerships, pendingPurchases, recentNotifications, pendingDeposits, pendingCheckouts] =
+    const [user, wallet, ownerships, pendingPurchases, pendingDeposits, pendingCheckouts] =
       await Promise.all([
         prisma.user
           .findUnique({
@@ -21,9 +20,6 @@ async function getDashboardData(userId: string) {
         prisma.wallet
           .findUnique({
             where: { userId },
-            include: {
-              transactions: { orderBy: { createdAt: "desc" }, take: 5 },
-            },
           })
           .catch((err) => {
             console.error("Dashboard wallet fetch error:", err);
@@ -47,16 +43,6 @@ async function getDashboardData(userId: string) {
           })
           .catch((err) => {
             console.error("Dashboard purchases fetch error:", err);
-            return [];
-          }),
-        prisma.notification
-          .findMany({
-            where: { userId },
-            orderBy: { createdAt: "desc" },
-            take: 5,
-          })
-          .catch((err) => {
-            console.error("Dashboard notifications fetch error:", err);
             return [];
           }),
         prisma.depositRequest
@@ -85,7 +71,6 @@ async function getDashboardData(userId: string) {
       wallet,
       ownerships: ownerships ?? [],
       pendingPurchases: pendingPurchases ?? [],
-      recentNotifications: recentNotifications ?? [],
       pendingDeposits: pendingDeposits ?? [],
       pendingCheckouts: pendingCheckouts ?? [],
     };
@@ -96,7 +81,6 @@ async function getDashboardData(userId: string) {
       wallet: null,
       ownerships: [],
       pendingPurchases: [],
-      recentNotifications: [],
       pendingDeposits: [],
       pendingCheckouts: [],
     };
@@ -107,7 +91,7 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const { user, wallet, ownerships, pendingPurchases, recentNotifications, pendingDeposits, pendingCheckouts } =
+  const { user, wallet, ownerships, pendingPurchases, pendingDeposits, pendingCheckouts } =
     await getDashboardData(session.userId);
 
   const portfolioValue = (ownerships ?? []).reduce(
@@ -249,9 +233,9 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-7">
+        <div className="mb-7">
           {/* Share Portfolio */}
-          <div className="lg:col-span-2 bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h2 className="font-semibold text-foreground">My Share Portfolio</h2>
               <Link href="/shares" className="text-xs text-brand hover:underline font-medium">
@@ -294,60 +278,7 @@ export default async function DashboardPage() {
               </div>
             )}
           </div>
-
-          {/* Recent Notifications */}
-          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-border">
-              <h2 className="font-semibold text-foreground">Notifications</h2>
-            </div>
-            {recentNotifications.length === 0 ? (
-              <div className="px-5 py-8 text-center text-sm text-muted-foreground">
-                No notifications yet.
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {recentNotifications.map((n) => (
-                  <div key={n.id} className={`px-5 py-3.5 ${!n.isRead ? "bg-brand-50/40" : ""}`}>
-                    <p className="text-sm font-medium text-foreground leading-snug">{n.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                      {n.message?.replace(/৳?\{Number\(request\.amount\)\.toFixed\(2\)\}/g, "৳ (Amount verified)")}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {n.createdAt ? new Date(n.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : ""}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
-
-        {/* Recent wallet transactions */}
-        {wallet && (wallet.transactions ?? []).length > 0 && (
-          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden mb-7">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h2 className="font-semibold text-foreground">Recent Transactions</h2>
-            </div>
-            <div className="divide-y divide-border">
-              {wallet.transactions.map((tx) => (
-                <div key={tx.id} className="px-6 py-3.5 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{WALLET_TX_LABELS[tx.type] ?? tx.type}</p>
-                    <p className="text-xs text-muted-foreground">{tx.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-semibold ${CREDIT_TX_TYPES.has(tx.type) ? "text-green-600" : "text-red-600"}`}>
-                      {CREDIT_TX_TYPES.has(tx.type) ? "+" : "-"}৳{Number(tx.amount).toFixed(2)}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : ""}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Module shortcuts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -64,3 +64,27 @@ export async function markNotificationsReadAction(
     return { error: "Could not update notifications." };
   }
 }
+
+// The bell's second tab: the latest wallet movements. These used to sit as a
+// "Recent Transactions" list on the dashboard; the client asked for both lists
+// to live under the bell instead.
+export type RecentTransactionItem = {
+  id: string;
+  type: string;
+  amount: number;
+  description: string | null;
+  createdAt: Date;
+};
+
+export async function getRecentTransactionsAction(): Promise<RecentTransactionItem[]> {
+  const session = await getSession();
+  if (!session) return [];
+
+  const rows = await prisma.walletTransaction.findMany({
+    where: { wallet: { userId: session.userId } },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: { id: true, type: true, amount: true, description: true, createdAt: true },
+  });
+  return rows.map((r) => ({ ...r, amount: Number(r.amount) }));
+}

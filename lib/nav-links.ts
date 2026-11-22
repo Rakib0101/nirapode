@@ -65,8 +65,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/forum", label: "Forum" },
       { href: "/islamic-center", label: "Islamic Center" },
       { href: "/blog", label: "Blog" },
-      // Existed on both web and app but was in none of the four old menus.
-      { href: "/lost-found", label: "Lost & Found" },
+      // Lost & Found was taken out of the menu at the client's request (Nov 2026);
+      // the pages still work for anyone with a link.
       { href: "/reminders", label: "Alarm & Reminders", auth: "signedIn" },
       { href: "/mrt-map", label: "MRT Map" },
       { href: "/contact", label: "Contact" },
