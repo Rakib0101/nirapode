@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ReplyForm } from "./reply-form";
 import { mediaUrl } from "@/lib/storage";
+import { hasAdminSection } from "@/lib/admin-permissions";
+import { ForumDeleteButton } from "./delete-button";
 
 export default async function TopicDetailPage({
   params,
@@ -30,6 +32,10 @@ export default async function TopicDetailPage({
     notFound();
   }
 
+  // Authors can delete their own posts/replies; community moderators anyone's.
+  const isModerator = session ? await hasAdminSection("pickPut") : false;
+  const canDelete = (authorId: string) => !!session && (isModerator || session.userId === authorId);
+
   return (
     <div className="min-h-screen bg-muted py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
@@ -51,6 +57,11 @@ export default async function TopicDetailPage({
             <span className="text-xs text-muted-foreground">
               Posted on {topic.createdAt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
             </span>
+            {canDelete(topic.user.id) && (
+              <span className="ml-auto">
+                <ForumDeleteButton kind="topic" id={topic.id} />
+              </span>
+            )}
           </div>
 
           <h1 className="text-2xl font-bold text-foreground leading-snug">{topic.title}</h1>
@@ -98,8 +109,9 @@ export default async function TopicDetailPage({
                       </span>
                     )}
                   </div>
-                  <span className="text-muted-foreground text-[11px]">
+                  <span className="flex items-center gap-1 text-muted-foreground text-[11px]">
                     {reply.createdAt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                    {canDelete(reply.user.id) && <ForumDeleteButton kind="reply" id={reply.id} />}
                   </span>
                 </div>
 

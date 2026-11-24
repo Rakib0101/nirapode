@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isValidImageRef } from "@/lib/storage";
+import { hasAdminSection } from "@/lib/admin-permissions";
 
 async function requireUser() {
   const session = await getSession();
@@ -104,4 +105,34 @@ export async function createReplyAction(
   revalidatePath(`/forum/${parse.data.topicId}`);
   revalidatePath("/forum");
   return { success: true };
+}
+
+// ── Deleting ─────────────────────────────────────────────────────────────────
+// The author can delete their own post or reply; staff with the community
+// moderation section ("pickPut" in lib/admin-sections.ts) can delete anyone's.
+
+export async function deleteTopicAction(topicId: string): Promise<{ error?: string }> {
+  const session = await requireUser();
+  const topic = await prisma.forumTopic.findUnique({ where: { id: topicId }, select: { userId: true } });
+  if (!topic) return { error: "Post not found." };
+  if (topic.userId !== session.userId && !(await hasAdminSection("pickPut"))) {
+    return { error: "You can only delete your own posts." };
+  }
+  // Replies go with it (onDelete: Cascade on ForumReply.topic).
+  await prisma.forumTopic.delete({ where: { id: topicId } });
+  revalidatePath("/forum");
+  redirect("/forum");
+}
+
+export async function deleteReplyAction(replyId: string): Promise<{ error?: string }> {
+  const session = await requireUser();
+  const reply = await prisma.forumReply.findUnique({ where: { id: replyId }, select: { userId: true, topicId: true } });
+  if (!reply) return { error: "Reply not found." };
+  if (reply.userId !== session.userId && !(await hasAdminSection("pickPut"))) {
+    return { error: "You can only delete your own replies." };
+  }
+  await prisma.forumReply.delete({ where: { id: replyId } });
+  revalidatePath(`/forum/${reply.topicId}`);
+  revalidatePath("/forum");
+  return {};
 }

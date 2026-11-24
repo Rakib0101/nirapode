@@ -13,7 +13,7 @@ export const ADMIN_SECTIONS = [
   { key: "taxi", label: "Taxi requests & vendors", hrefs: ["/admin/taxi"] },
   { key: "blog", label: "Blog", hrefs: ["/admin/blog"] },
   { key: "islamic", label: "Islamic Center", hrefs: ["/admin/islamic"] },
-  { key: "pickPut", label: "Pick & Put / Lost & Found", hrefs: ["/admin/pick-put", "/admin/lost-found"] },
+  { key: "pickPut", label: "Community moderation (Forum, Pick & Put, Lost & Found)", hrefs: ["/admin/pick-put", "/admin/lost-found"] },
   { key: "apply", label: "Apply / Services", hrefs: ["/admin/apply"] },
   { key: "products", label: "Products", hrefs: ["/admin/products"] },
   { key: "gcash", label: "SGD → GCash transfers", hrefs: ["/admin/gcash"] },
